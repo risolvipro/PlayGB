@@ -32,12 +32,6 @@ typedef struct {
     bool empty;
 } PGB_GameSceneModel;
 
-typedef enum {
-    PGB_CrankSelectorStateIdle,
-    PGB_CrankSelectorStateStartPressed,
-    PGB_CrankSelectorStateSelectPressed
-} PGB_CrankSelectorState;
-
 typedef struct {
     int width;
     int height;
@@ -55,8 +49,10 @@ typedef struct {
     float triggerAngle;
     float deadAngle;
     LCDBitmapTable *bitmapTable;
+    LCDBitmap *startSelectBitmap;
     float index;
-    PGB_CrankSelectorState state;
+    bool startPressed;
+    bool selectPressed;
 } PGB_CrankSelector;
 
 typedef struct {

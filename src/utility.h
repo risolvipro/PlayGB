@@ -20,7 +20,7 @@ extern PlaydateAPI *playdate;
 #define PGB_LCD_WIDTH 320
 #define PGB_LCD_HEIGHT 240
 
-#define PGB_LCD_X 32
+#define PGB_LCD_X 32 // must be even
 #define PGB_LCD_Y 0
 
 #define PGB_MAX(x, y) (((x) > (y)) ? (x) : (y))

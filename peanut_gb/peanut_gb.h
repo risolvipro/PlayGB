@@ -1280,8 +1280,8 @@ void __gb_draw_line(struct gb_s *gb)
 		}
 	}
     
-    uint8_t *front_pixels = &gb->display.front_fb[gb->gb_reg.LY][0];
-    uint8_t *back_pixels = &gb->display.back_fb[gb->gb_reg.LY][0];
+    uint8_t *front_pixels = gb->display.front_fb[gb->gb_reg.LY];
+    uint8_t *back_pixels = gb->display.back_fb[gb->gb_reg.LY];
 
     uint8_t *pixels = gb->display.back_fb_enabled ? back_pixels : front_pixels;
     

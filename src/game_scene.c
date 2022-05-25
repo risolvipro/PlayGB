@@ -185,10 +185,12 @@ void PGB_GameScene_selector_init(PGB_GameScene *gameScene){
     gameScene->selector.selectButtonY = selectButtonY;
     gameScene->selector.numberOfFrames = 27;
     gameScene->selector.bitmapTable = playdate->graphics->loadBitmapTable("images/selector/selector", NULL);
+    gameScene->selector.startSelectBitmap = playdate->graphics->loadBitmap("images/selector-start-select", NULL);
     gameScene->selector.triggerAngle = 15;
     gameScene->selector.deadAngle = 20;
     gameScene->selector.index = 0;
-    gameScene->selector.state = PGB_CrankSelectorStateIdle;
+    gameScene->selector.startPressed = false;
+    gameScene->selector.selectPressed = false;
 }
 
 /**
@@ -343,17 +345,18 @@ void PGB_GameScene_update(void *object){
     PGB_GameScene *gameScene = object;
     
     PGB_Scene_update(gameScene->scene);
-        
-    gameScene->selector.state = PGB_CrankSelectorStateIdle;
-    
+            
     float progress = 0.5f;
+    
+    gameScene->selector.startPressed = false;
+    gameScene->selector.selectPressed = false;
     
     if(!playdate->system->isCrankDocked()){
         float angle = fmaxf(0, fminf(360, playdate->system->getCrankAngle()));
         
         if(angle <= (180 - gameScene->selector.deadAngle)){
             if(angle >= gameScene->selector.triggerAngle){
-                gameScene->selector.state = PGB_CrankSelectorStateStartPressed;
+                gameScene->selector.startPressed = true;
             }
             
             float adjustedAngle = fminf(angle, gameScene->selector.triggerAngle);
@@ -361,21 +364,32 @@ void PGB_GameScene_update(void *object){
         }
         else if(angle >= (180 + gameScene->selector.deadAngle)){
             if(angle <= (360 - gameScene->selector.triggerAngle)){
-                gameScene->selector.state = PGB_CrankSelectorStateSelectPressed;
+                gameScene->selector.selectPressed = true;
             }
             
             float adjustedAngle = fminf(360 - angle, gameScene->selector.triggerAngle);
             progress = 0.5f + adjustedAngle / gameScene->selector.triggerAngle * 0.5f;
         }
+        else {
+            gameScene->selector.startPressed = true;
+            gameScene->selector.selectPressed = true;
+        }
     }
     
-    int selectorIndex = 1 + roundf(progress * (gameScene->selector.numberOfFrames - 2));
+    int selectorIndex;
     
-    if(progress == 0){
-        selectorIndex = 0;
+    if(gameScene->selector.startPressed && gameScene->selector.selectPressed){
+        selectorIndex = -1;
     }
-    else if(progress == 1){
-        selectorIndex = gameScene->selector.numberOfFrames - 1;
+    else {
+        selectorIndex = 1 + roundf(progress * (gameScene->selector.numberOfFrames - 2));
+        
+        if(progress == 0){
+            selectorIndex = 0;
+        }
+        else if(progress == 1){
+            selectorIndex = gameScene->selector.numberOfFrames - 1;
+        }
     }
     
     gameScene->selector.index = selectorIndex;
@@ -403,8 +417,8 @@ void PGB_GameScene_update(void *object){
         PDButtons current;
         playdate->system->getButtonState(&current, NULL, NULL);
         
-        context->gb.direct.joypad_bits.start = !(gameScene->selector.state == PGB_CrankSelectorStateStartPressed);
-        context->gb.direct.joypad_bits.select = !(gameScene->selector.state == PGB_CrankSelectorStateSelectPressed);
+        context->gb.direct.joypad_bits.start = !(gameScene->selector.startPressed);
+        context->gb.direct.joypad_bits.select = !(gameScene->selector.selectPressed);
            
         context->gb.direct.joypad_bits.a = !(current & kButtonA);
         context->gb.direct.joypad_bits.b = !(current & kButtonB);
@@ -435,9 +449,7 @@ void PGB_GameScene_update(void *object){
             
             int row_offset = LCD_ROWSIZE;
             int row_offset2 = LCD_ROWSIZE * 2;
-                        
-            int row_align = ((PGB_LCD_X & 1) == (0)) ? 0 : 1;
-            
+
             int y_offset;
             int next_y_offset = 2;
             
@@ -469,13 +481,13 @@ void PGB_GameScene_update(void *object){
                     
                     for(int x = 0; x < LCD_WIDTH; x++){
                         int x3 = x2 + 1;
-                        uint8_t palette = pixels[x] & 3;
+                        int palette = pixels[x] & 3;
                         
-                        uint8_t d_col2 = x2 & 3;
-                        uint8_t d_col3 = x3 & 3;
+                        int d_col2 = x2 & 3;
+                        int d_col3 = x3 & 3;
                         
-                        uint8_t mask2 = (1 << (7 - (x2 & 7)));
-                        uint8_t mask3 = (1 << (7 - (x3 & 7)));
+                        int mask2 = (1 << (7 - (x2 & 7)));
+                        int mask3 = (1 << (7 - (x3 & 7)));
                         
                         framebuffer[fb_index1] ^= (-(PGB_patterns[palette][d_row1][d_col2]) ^ framebuffer[fb_index1]) & mask2;
                         framebuffer[fb_index1] ^= (-(PGB_patterns[palette][d_row1][d_col3]) ^ framebuffer[fb_index1]) & mask3;
@@ -487,7 +499,7 @@ void PGB_GameScene_update(void *object){
                         
                         x2 += 2;
                         
-                        if(((x2 - row_align) & 7) == 0){
+                        if((x2 & 7) == 0){
                             fb_index1 += 1;
                             fb_index2 += 1;
                         }
@@ -529,7 +541,15 @@ void PGB_GameScene_update(void *object){
         }
         
         if(needsDisplaySelector){
-            LCDBitmap *bitmap = playdate->graphics->getTableBitmap(gameScene->selector.bitmapTable, selectorIndex);
+            LCDBitmap *bitmap;
+            
+            if(selectorIndex < 0){
+                bitmap = gameScene->selector.startSelectBitmap;
+            }
+            else {
+                bitmap = playdate->graphics->getTableBitmap(gameScene->selector.bitmapTable, selectorIndex);
+            }
+            
             playdate->graphics->drawBitmap(bitmap, gameScene->selector.x, gameScene->selector.y, kBitmapUnflipped);
         }
         
