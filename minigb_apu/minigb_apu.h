@@ -9,7 +9,7 @@
 
 #include <stdint.h>
 
-#define AUDIO_SAMPLE_RATE	48000.0f
+#define AUDIO_SAMPLE_RATE	32768
 
 #define DMG_CLOCK_FREQ		4194304.0
 #define SCREEN_REFRESH_CYCLES	70224.0
@@ -18,9 +18,10 @@
 #define AUDIO_SAMPLES		((unsigned)(AUDIO_SAMPLE_RATE / VERTICAL_SYNC))
 
 /**
- * Playdate audio callback function.
+ * Fill allocated buffer "data" with "len" number of 32-bit floating point
+ * samples (native endian order) in stereo interleaved format.
  */
-int audio_callback(void *context, int16_t *left, int16_t *right, int len);
+void audio_callback(void *ptr, uint8_t *data, int len);
 
 /**
  * Read audio register at given address "addr".
