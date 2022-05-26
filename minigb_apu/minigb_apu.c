@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include "minigb_apu.h"
+#include "game_scene.h"
 
 #define DMG_CLOCK_FREQ_U	((unsigned)DMG_CLOCK_FREQ)
 #define AUDIO_NSAMPLES		(AUDIO_SAMPLES * 2u)
@@ -116,7 +117,7 @@ static void chan_enable(const uint_fast8_t i, const bool enable)
 	//audio_mem[0xFF26 - AUDIO_ADDR_COMPENSATION] |= 0x80 | ((uint8_t)enable) << i;
 }
 
-static void update_env(struct chan *c)
+static inline void update_env(struct chan *c)
 {
 	c->env.counter += c->env.inc;
 
@@ -132,7 +133,7 @@ static void update_env(struct chan *c)
 	}
 }
 
-static void update_len(struct chan *c)
+static inline void update_len(struct chan *c)
 {
 	if (!c->len.enabled)
 		return;
@@ -144,7 +145,7 @@ static void update_len(struct chan *c)
 	}
 }
 
-static bool update_freq(struct chan *c, uint32_t *pos)
+static inline bool update_freq(struct chan *c, uint32_t *pos)
 {
 	uint32_t inc = c->freq_inc - *pos;
 	c->freq_counter += inc;
@@ -159,7 +160,7 @@ static bool update_freq(struct chan *c, uint32_t *pos)
 	}
 }
 
-static void update_sweep(struct chan *c)
+static inline void update_sweep(struct chan *c)
 {
 	c->sweep.counter += c->sweep.inc;
 
@@ -184,7 +185,7 @@ static void update_sweep(struct chan *c)
 	}
 }
 
-static void update_square(int16_t* samples, const bool ch2)
+static inline void update_square(int16_t *left, int16_t *right, const bool ch2, int len)
 {
 	uint32_t freq;
 	struct chan* c = chans + ch2;
@@ -196,7 +197,7 @@ static void update_square(int16_t* samples, const bool ch2)
 	set_note_freq(c, freq);
 	c->freq_inc *= 8;
 
-	for (uint_fast16_t i = 0; i < AUDIO_NSAMPLES; i += 2) {
+	for (uint_fast16_t i = 0; i < len; i++) {
 		update_len(c);
 
 		if (!c->enabled)
@@ -226,8 +227,8 @@ static void update_square(int16_t* samples, const bool ch2)
 		sample *= c->volume;
 		sample /= 4;
 
-		samples[i + 0] += sample * c->on_left * vol_l;
-		samples[i + 1] += sample * c->on_right * vol_r;
+        left[i] += sample * c->on_left * vol_l;
+        right[i] += sample * c->on_right * vol_r;
 	}
 }
 
@@ -235,7 +236,7 @@ static uint8_t wave_sample(const unsigned int pos, const unsigned int volume)
 {
 	uint8_t sample;
 
-	sample =  audio_mem[(0xFF30 + pos / 2) - AUDIO_ADDR_COMPENSATION];
+	sample =  audio_mem[(0xFF30 + (int)(pos * 0.5f)) - AUDIO_ADDR_COMPENSATION];
 	if (pos & 1) {
 		sample &= 0xF;
 	} else {
@@ -244,7 +245,7 @@ static uint8_t wave_sample(const unsigned int pos, const unsigned int volume)
 	return volume ? (sample >> (volume - 1)) : 0;
 }
 
-static void update_wave(int16_t *samples)
+static inline void update_wave(int16_t *left, int16_t *right, int len)
 {
 	uint32_t freq;
 	struct chan *c = chans + 2;
@@ -257,7 +258,7 @@ static void update_wave(int16_t *samples)
 
 	c->freq_inc *= 32;
 
-	for (uint_fast16_t i = 0; i < AUDIO_NSAMPLES; i += 2) {
+	for (uint_fast16_t i = 0; i < len; i++) {
 		update_len(c);
 
 		if (!c->enabled)
@@ -293,12 +294,12 @@ static void update_wave(int16_t *samples)
 
 		sample /= 4;
 
-		samples[i + 0] += sample * c->on_left * vol_l;
-		samples[i + 1] += sample * c->on_right * vol_r;
+        left[i] += sample * c->on_left * vol_l;
+        right[i] += sample * c->on_right * vol_r;
 	}
 }
 
-static void update_noise(int16_t *samples)
+static inline void update_noise(int16_t *left, int16_t *right, int len)
 {
 	struct chan *c = chans + 3;
 
@@ -318,7 +319,7 @@ static void update_noise(int16_t *samples)
 	if (c->freq >= 14)
 		c->enabled = 0;
 
-	for (uint_fast16_t i = 0; i < AUDIO_NSAMPLES; i += 2) {
+	for (uint_fast16_t i = 0; i < len; i++) {
 		update_len(c);
 
 		if (!c->enabled)
@@ -357,27 +358,9 @@ static void update_noise(int16_t *samples)
 		sample *= c->volume;
 		sample /= 4;
 
-		samples[i + 0] += sample * c->on_left * vol_l;
-		samples[i + 1] += sample * c->on_right * vol_r;
+		left[i] += sample * c->on_left * vol_l;
+		right[i] += sample * c->on_right * vol_r;
 	}
-}
-
-/**
- * SDL2 style audio callback function.
- */
-void audio_callback(void *userdata, uint8_t *stream, int len)
-{
-	int16_t *samples = (int16_t *)stream;
-
-	/* Appease unused variable warning. */
-	(void)userdata;
-
-	memset(stream, 0, len);
-
-	update_square(samples, 0);
-	update_square(samples, 1);
-	update_wave(samples);
-	update_noise(samples);
 }
 
 static void chan_trigger(uint_fast8_t i)
@@ -602,4 +585,32 @@ void audio_init(void)
 		for(uint_fast8_t i = 0; i < sizeof(wave_init); ++i)
 			audio_write(0xFF30 + i, wave_init[i]);
 	}
+}
+
+/**
+ * Playdate audio callback function.
+ */
+int audio_callback(void *context, int16_t *left, int16_t *right, int len)
+{
+    PGB_GameScene *gameScene = context;
+    
+    if(gameScene->audioLocked){
+        return 0;
+    }
+    
+    struct chan *c1 = chans;
+    struct chan *c2 = chans + 1;
+    struct chan *c3 = chans + 2;
+    struct chan *c4 = chans + 3;
+    
+    if(!c1->powered && !c2->powered && !c3->powered && !c4->powered){
+        return 0;
+    }
+    
+    update_square(left, right, 0, len);
+    update_square(left, right, 1, len);
+    update_wave(left, right, len);
+    update_noise(left, right, len);
+    
+    return 1;
 }

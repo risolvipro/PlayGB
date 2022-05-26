@@ -12,7 +12,7 @@ static const int pref_version = 1;
 static const char *pref_filename = "preferences.bin";
 static SDFile *pref_file;
 
-bool preferences_audio_enabled = false;
+bool preferences_sound_enabled = false;
 bool preferences_display_fps = false;
 
 void cpu_endian_to_big_endian(unsigned char *src, unsigned char *buffer, size_t size, size_t len);
@@ -38,7 +38,7 @@ void prefereces_read_from_disk(void){
         // read model version
         prefereces_read_uint32();
         
-        preferences_audio_enabled = prefereces_read_uint8();
+        preferences_sound_enabled = prefereces_read_uint8();
         preferences_display_fps = prefereces_read_uint8();
         
         playdate->file->close(pref_file);
@@ -51,7 +51,7 @@ void prefereces_save_to_disk(void){
     
     prefereces_write_uint32(pref_version);
     
-    prefereces_write_uint8(preferences_audio_enabled ? 1 : 0);
+    prefereces_write_uint8(preferences_sound_enabled ? 1 : 0);
     prefereces_write_uint8(preferences_display_fps ? 1 : 0);
     
     playdate->file->close(pref_file);

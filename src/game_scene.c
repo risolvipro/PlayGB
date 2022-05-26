@@ -17,7 +17,6 @@ typedef struct PGB_GameSceneContext {
     struct gb_s gb;
     uint8_t *rom;
     uint8_t *cart_ram;
-    uint8_t line_changed[LCD_HEIGHT];
 } PGB_GameSceneContext;
 
 static void PGB_GameScene_selector_init(PGB_GameScene *gameScene);
@@ -37,7 +36,6 @@ static void read_cart_ram_file(const char *save_filename, uint8_t **dest, const 
 static void write_cart_ram_file(const char *save_filename, uint8_t **dest, const size_t len);
 
 static void gb_error(struct gb_s *gb, const enum gb_error_e gb_err, const uint16_t val);
-static void lcd_line_update(struct gb_s *gb, const uint_fast8_t y, const uint8_t changed);
 
 static const char *startButtonText = "start";
 static const char *selectButtonText = "select";
@@ -76,7 +74,7 @@ PGB_GameScene* PGB_GameScene_new(const char *rom_filename){
     
     gameScene->soundSource = NULL;
     
-    gameScene->audioEnabled = preferences_audio_enabled;
+    gameScene->audioEnabled = preferences_sound_enabled;
     gameScene->audioLocked = false;
 
     PGB_GameScene_selector_init(gameScene);
@@ -117,7 +115,7 @@ PGB_GameScene* PGB_GameScene_new(const char *rom_filename){
             }
             
             // init lcd
-            gb_init_lcd(&context->gb, lcd_line_update);
+            gb_init_lcd(&context->gb);
             
             context->gb.direct.frame_skip = 1;
 
@@ -334,12 +332,6 @@ void gb_error(struct gb_s *gb, const enum gb_error_e gb_err, const uint16_t val)
     return;
 }
 
-void lcd_line_update(struct gb_s *gb, const uint_fast8_t y, const uint8_t changed) {
-    
-    PGB_GameSceneContext *context = gb->direct.priv;
-    context->line_changed[y] = changed;
-}
-
 void PGB_GameScene_update(void *object){
     
     PGB_GameScene *gameScene = object;
@@ -449,7 +441,7 @@ void PGB_GameScene_update(void *object){
             
             int row_offset = LCD_ROWSIZE;
             int row_offset2 = LCD_ROWSIZE * 2;
-
+            
             int y_offset;
             int next_y_offset = 2;
             
@@ -467,8 +459,7 @@ void PGB_GameScene_update(void *object){
                     single_line = false;
                 }
                 
-                uint8_t changed = context->line_changed[y];
-                if(changed){
+                if(context->gb.display.changed_lines[y]){
                     uint8_t *pixels = !context->gb.display.back_fb_enabled ? context->gb.display.back_fb[y] : context->gb.display.front_fb[y];
                     
                     int d_row1 = y2 & 3;

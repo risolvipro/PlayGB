@@ -179,9 +179,9 @@ void PGB_LibraryScene_didSelectRefresh(void *userdata){
     PGB_LibraryScene_reloadList(libraryScene);
 }
 
-void PGB_LibraryScene_didChangeAudio(void *userdata){
+void PGB_LibraryScene_didChangeSound(void *userdata){
     
-    preferences_audio_enabled = playdate->system->getMenuItemValue(audioMenuItem);
+    preferences_sound_enabled = playdate->system->getMenuItemValue(audioMenuItem);
 }
 
 void PGB_LibraryScene_didChangeFPS(void *userdata){
@@ -195,7 +195,7 @@ void PGB_LibraryScene_menu(void *object) {
     
     playdate->system->addMenuItem("Refresh", PGB_LibraryScene_didSelectRefresh, libraryScene);
     
-    audioMenuItem = playdate->system->addCheckmarkMenuItem("Audio", preferences_audio_enabled, PGB_LibraryScene_didChangeAudio, NULL);
+    audioMenuItem = playdate->system->addCheckmarkMenuItem("Sound", preferences_sound_enabled, PGB_LibraryScene_didChangeSound, NULL);
     fpsMenuItem = playdate->system->addCheckmarkMenuItem("Show FPS", preferences_display_fps, PGB_LibraryScene_didChangeFPS, NULL);
 }
 

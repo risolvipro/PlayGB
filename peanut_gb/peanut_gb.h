@@ -453,8 +453,6 @@ struct gb_s
 		 * \param line		Line to draw pixels on. This is
 		 * guaranteed to be between 0-144 inclusive.
 		 */
-        void (*lcd_line_update)(struct gb_s *gb,
-                              const uint_fast8_t line, const uint8_t changed);
         
 		/* Palettes */
 		uint8_t bg_palette[4];
@@ -465,13 +463,13 @@ struct gb_s
         
 		/* Only support 30fps frame skip. */
 		unsigned frame_skip_count : 1;
-		unsigned interlace_count : 1;
         
         /* Playdate custom implementation */
         unsigned back_fb_enabled : 1;
         
         uint8_t front_fb[LCD_HEIGHT][LCD_WIDTH];
         uint8_t back_fb[LCD_HEIGHT][LCD_WIDTH];
+        uint8_t changed_lines[LCD_HEIGHT];
 	} display;
 
 	/**
@@ -486,9 +484,7 @@ struct gb_s
 		/* Set to enable interlacing. Interlacing will start immediately
 		 * (at the next line drawing).
 		 */
-		unsigned interlace : 1;
 		unsigned frame_skip : 1;
-        
         unsigned sound : 1;
         
 		union
@@ -1254,31 +1250,9 @@ static int compare_sprites(const void *in1, const void *in2)
 
 void __gb_draw_line(struct gb_s *gb)
 {
-	/* If LCD not initialised by front-end, don't render anything. */
-    if(gb->display.lcd_line_update == NULL)
-		return;
-
+    
 	if(gb->direct.frame_skip && !gb->display.frame_skip_count)
 		return;
-    
-	/* If interlaced mode is activated, check if we need to draw the current
-	 * line. */
-	if(gb->direct.interlace)
-	{
-		if((gb->display.interlace_count == 0
-				&& (gb->gb_reg.LY & 1) == 0)
-				|| (gb->display.interlace_count == 1
-				    && (gb->gb_reg.LY & 1) == 1))
-		{
-			/* Compensate for missing window draw if required. */
-			if(gb->gb_reg.LCDC & LCDC_WINDOW_ENABLE
-					&& gb->gb_reg.LY >= gb->display.WY
-					&& gb->gb_reg.WX <= 166)
-				gb->display.window_clear++;
-
-			return;
-		}
-	}
     
     uint8_t *front_pixels = gb->display.front_fb[gb->gb_reg.LY];
     uint8_t *back_pixels = gb->display.back_fb[gb->gb_reg.LY];
@@ -1406,7 +1380,7 @@ void __gb_draw_line(struct gb_s *gb)
 					tile = VRAM_TILES_1 + idx * 0x10;
 				else
 					tile = VRAM_TILES_2 + ((idx + 0x80) % 0x100) * 0x10;
-
+                
 				tile += 2 * py;
 				t1 = gb->vram[tile];
 				t2 = gb->vram[tile + 1];
@@ -1564,8 +1538,8 @@ void __gb_draw_line(struct gb_s *gb)
 		}
 	}
         
-    const uint8_t changed = (memcmp(front_pixels, back_pixels, LCD_WIDTH) != 0);
-    gb->display.lcd_line_update(gb, gb->gb_reg.LY, changed);
+    uint8_t changed = (memcmp(front_pixels, back_pixels, LCD_WIDTH) != 0);
+    gb->display.changed_lines[gb->gb_reg.LY] = changed;
 }
 #endif
 
@@ -3579,17 +3553,6 @@ void __gb_step_cpu(struct gb_s *gb)
 				gb->display.frame_skip_count =
 					!gb->display.frame_skip_count;
 			}
-
-			/* If interlaced is activated, change which lines get
-			 * updated. Also, only update lines on frames that are
-			 * actually drawn when frame skip is enabled. */
-			if(gb->direct.interlace &&
-					(!gb->direct.frame_skip ||
-					 gb->display.frame_skip_count))
-			{
-				gb->display.interlace_count =
-					!gb->display.interlace_count;
-			}
             
             if(!gb->direct.frame_skip ||
                !gb->display.frame_skip_count)
@@ -3823,7 +3786,6 @@ enum gb_init_error_e gb_init(struct gb_s *gb,
 	gb->num_ram_banks = num_ram_banks[gb->gb_rom_read(gb, ram_size_location)];
 
 	gb->lcd_blank = 0;
-    gb->display.lcd_line_update = NULL;
     
     gb->direct.sound = 0;
     
@@ -3865,14 +3827,8 @@ const char* gb_get_rom_name(struct gb_s* gb, char *title_str)
 
 #if ENABLE_LCD
  
-void gb_init_lcd(struct gb_s *gb,
-        void (*lcd_line_update)(struct gb_s *gb,
-            const uint_fast8_t line, const uint8_t changed))
+void gb_init_lcd(struct gb_s *gb)
 {
-    gb->display.lcd_line_update = lcd_line_update;
-
-	gb->direct.interlace = 0;
-	gb->display.interlace_count = 0;
 	gb->direct.frame_skip = 0;
 	gb->display.frame_skip_count = 0;
     
@@ -3880,6 +3836,8 @@ void gb_init_lcd(struct gb_s *gb,
     
     memset(gb->display.front_fb, 0, sizeof(gb->display.front_fb));
     memset(gb->display.back_fb, 0, sizeof(gb->display.back_fb));
+    
+    memset(gb->display.changed_lines, 0, sizeof(gb->display.changed_lines));
     
 	gb->display.window_clear = 0;
 	gb->display.WY = 0;

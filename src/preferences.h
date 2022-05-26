@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include "utility.h"
 
-extern bool preferences_audio_enabled;
+extern bool preferences_sound_enabled;
 extern bool preferences_display_fps;
 
 void prefereces_init(void);
