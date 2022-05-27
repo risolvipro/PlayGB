@@ -56,7 +56,7 @@ void PGB_LibraryScene_listFiles(const char *filename, void *userdata) {
     }
     extension = dot + 1;
     
-    if(strcmp(extension, "gb") == 0 || strcmp(extension, "gbc") == 0){
+    if((strcmp(extension, "gb") == 0 || strcmp(extension, "gbc") == 0) && strncmp(filename, ".", 1) != 0){
         PGB_Game *game = PGB_Game_new(filename);
         array_push(libraryScene->games, game);
     }
