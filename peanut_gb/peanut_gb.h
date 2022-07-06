@@ -54,7 +54,7 @@
 
 /* Adds more code to improve LCD rendering accuracy. */
 #ifndef PEANUT_GB_HIGH_LCD_ACCURACY
-	#define PEANUT_GB_HIGH_LCD_ACCURACY 1
+	#define PEANUT_GB_HIGH_LCD_ACCURACY 0
 #endif
 
 /* Interrupt masks */
@@ -1332,7 +1332,7 @@ void __gb_draw_line(struct gb_s *gb)
 			px++;
 		}
 	}
-
+    
 	/* draw window */
 	if(gb->gb_reg.LCDC & LCDC_WINDOW_ENABLE
 			&& gb->gb_reg.LY >= gb->display.WY
@@ -1452,15 +1452,18 @@ void __gb_draw_line(struct gb_s *gb)
 		{
 			uint8_t s = sprite_number;
 #endif
+            
+            uint8_t s_4 = s * 4;
+            
 			/* Sprite Y position. */
-			uint8_t OY = gb->oam[4 * s + 0];
+			uint8_t OY = gb->oam[s_4];
 			/* Sprite X position. */
-			uint8_t OX = gb->oam[4 * s + 1];
+			uint8_t OX = gb->oam[s_4 + 1];
 			/* Sprite Tile/Pattern Number. */
-			uint8_t OT = gb->oam[4 * s + 2]
+			uint8_t OT = gb->oam[s_4 + 2]
 				     & (gb->gb_reg.LCDC & LCDC_OBJ_SIZE ? 0xFE : 0xFF);
 			/* Additional attributes. */
-			uint8_t OF = gb->oam[4 * s + 3];
+			uint8_t OF = gb->oam[s_4 + 3];
 
 #if !PEANUT_GB_HIGH_LCD_ACCURACY
 			/* If sprite isn't on this line, continue. */
@@ -1480,9 +1483,11 @@ void __gb_draw_line(struct gb_s *gb)
 			if(OF & OBJ_FLIP_Y)
 				py = (gb->gb_reg.LCDC & LCDC_OBJ_SIZE ? 15 : 7) - py;
 
+            uint16_t t1_i = VRAM_TILES_1 + OT * 0x10 + 2 * py;
+            
 			// fetch the tile
-			uint8_t t1 = gb->vram[VRAM_TILES_1 + OT * 0x10 + 2 * py];
-			uint8_t t2 = gb->vram[VRAM_TILES_1 + OT * 0x10 + 2 * py + 1];
+			uint8_t t1 = gb->vram[t1_i];
+			uint8_t t2 = gb->vram[t1_i + 1];
 
 			// handle x flip
 			uint8_t dir, start, end, shift;

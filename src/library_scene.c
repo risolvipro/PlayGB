@@ -54,9 +54,11 @@ void PGB_LibraryScene_listFiles(const char *filename, void *userdata) {
     if(!dot || dot == filename){
         extension = "";
     }
-    extension = dot + 1;
+    else {
+        extension = dot + 1;
+    }
     
-    if(strcmp(extension, "gb") == 0 || strcmp(extension, "gbc") == 0){
+    if((strcmp(extension, "gb") == 0 || strcmp(extension, "gbc") == 0)){
         PGB_Game *game = PGB_Game_new(filename);
         array_push(libraryScene->games, game);
     }
@@ -71,7 +73,7 @@ void PGB_LibraryScene_reloadList(PGB_LibraryScene *libraryScene) {
     
     array_clear(libraryScene->games);
     
-    playdate->file->listfiles(PGB_gamesPath, PGB_LibraryScene_listFiles, libraryScene);
+    playdate->file->listfiles(PGB_gamesPath, PGB_LibraryScene_listFiles, libraryScene, 0);
     
     PGB_Array *items = libraryScene->listView->items;
     
@@ -193,10 +195,10 @@ void PGB_LibraryScene_menu(void *object) {
     
     PGB_LibraryScene *libraryScene = object;
     
-    playdate->system->addMenuItem("Refresh", PGB_LibraryScene_didSelectRefresh, libraryScene);
+    // playdate->system->addMenuItem("Refresh", PGB_LibraryScene_didSelectRefresh, libraryScene);
     
-    audioMenuItem = playdate->system->addCheckmarkMenuItem("Sound", preferences_sound_enabled, PGB_LibraryScene_didChangeSound, NULL);
-    fpsMenuItem = playdate->system->addCheckmarkMenuItem("Show FPS", preferences_display_fps, PGB_LibraryScene_didChangeFPS, NULL);
+    audioMenuItem = playdate->system->addCheckmarkMenuItem("Sound", preferences_sound_enabled, PGB_LibraryScene_didChangeSound, libraryScene);
+    fpsMenuItem = playdate->system->addCheckmarkMenuItem("Show FPS", preferences_display_fps, PGB_LibraryScene_didChangeFPS, libraryScene);
 }
 
 void PGB_LibraryScene_free(void *object) {

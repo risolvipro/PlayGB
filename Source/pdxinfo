@@ -2,5 +2,5 @@ name=PlayGB
 author=Risolvi Productions
 description=A Game Boy emulator based on Peanut-GB
 bundleID=com.risolvipro.playgb
-version=0.3
+version=0.4
 imagePath=images/card

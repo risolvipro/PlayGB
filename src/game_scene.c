@@ -608,7 +608,7 @@ void PGB_GameScene_didSelectSave(void *userdata) {
     gameScene->audioLocked = false;
 }
 
-void PGB_GameScene_didSelectExit(void *userdata) {
+void PGB_GameScene_didSelectLibrary(void *userdata) {
     
     PGB_GameScene *gameScene = userdata;
     
@@ -622,7 +622,7 @@ void PGB_GameScene_refreshMenu(PGB_GameScene *gameScene) {
     
     playdate->system->removeAllMenuItems();
 
-    playdate->system->addMenuItem("Load ROM", PGB_GameScene_didSelectExit, gameScene);
+    playdate->system->addMenuItem("Library", PGB_GameScene_didSelectLibrary, gameScene);
     
     if(gameScene->state == PGB_GameSceneStateLoaded){
         playdate->system->addMenuItem("Save", PGB_GameScene_didSelectSave, gameScene);
