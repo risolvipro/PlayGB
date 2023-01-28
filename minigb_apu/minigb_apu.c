@@ -466,8 +466,8 @@ void audio_write(const uint16_t addr, const uint8_t val)
 		return;
 
 	audio_mem[addr - AUDIO_ADDR_COMPENSATION] = val;
-	i = (addr - AUDIO_ADDR_COMPENSATION) / 5;
-
+	i = (addr - AUDIO_ADDR_COMPENSATION) * 0.2f;
+    
 	switch (addr) {
 	case 0xFF12:
 	case 0xFF17:

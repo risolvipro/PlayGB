@@ -141,6 +141,7 @@ void PGB_LibraryScene_update(void *object) {
     
     if(libraryScene->tab == PGB_LibrarySceneTabList){
         
+        libraryScene->listView->needsDisplay = needsDisplay;
         libraryScene->listView->frame = PDRectMake(0, 0, playdate->display->getWidth(), playdate->display->getHeight());
         
         PGB_ListView_update(libraryScene->listView);
