@@ -18,7 +18,7 @@ static void PGB_LibraryScene_menu(void *object);
 static PDMenuItem *audioMenuItem;
 static PDMenuItem *fpsMenuItem;
 
-PGB_LibraryScene* PGB_LibraryScene_new() {
+PGB_LibraryScene* PGB_LibraryScene_new(void) {
     
     PGB_Scene *scene = PGB_Scene_new();
     

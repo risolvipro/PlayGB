@@ -3,3 +3,5 @@
 /build/
 /Source/pdex.bin
 /Source/pdex.dylib
+/Source/pdex.elf
+/Source/pdex.so

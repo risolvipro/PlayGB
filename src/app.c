@@ -12,7 +12,7 @@
 
 PGB_Application *PGB_App;
 
-void PGB_init() {
+void PGB_init(void) {
     
     PGB_App = pgb_malloc(sizeof(PGB_Application));
     
@@ -33,7 +33,7 @@ void PGB_init() {
     PGB_present(libraryScene->scene);
 }
 
-void PGB_update() {
+void PGB_update(void) {
     
     if(PGB_App->scene != NULL){
         void *managedObject = PGB_App->scene->managedObject;
@@ -65,7 +65,7 @@ void PGB_present(PGB_Scene *scene) {
     PGB_App->pendingScene = scene;
 }
 
-void PGB_quit() {
+void PGB_quit(void) {
     
     prefereces_save_to_disk();
     

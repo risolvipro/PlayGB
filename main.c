@@ -26,9 +26,6 @@ DllExport int eventHandler(PlaydateAPI *pd, PDSystemEvent event, uint32_t arg) {
         
         pd->system->setUpdateCallback(update, pd);
     }
-    else if (event == kEventResume){
-        pd->system->resetElapsedTime();
-    }
     else if (event == kEventTerminate){
         PGB_quit();
     }
