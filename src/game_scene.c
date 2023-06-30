@@ -445,72 +445,39 @@ void PGB_GameScene_update(void *object){
             int y_offset;
             int next_y_offset = 2;
             
-            for(int y = 0; y < (LCD_HEIGHT - 1); y++){
-                y_offset = next_y_offset;
-                
-                if(skip_counter == 5){
-                    y_offset = 1;
-                    next_y_offset = 1;
-                    skip_counter = 0;
-                    single_line = true;
-                }
-                else if(single_line){
-                    next_y_offset = 2;
-                    single_line = false;
-                }
-                
-                if(context->gb.display.changed_lines[y]){
+            #define PLAYDATE_WIDTH 400
+            #define PLAYDATE_HEIGHT 240
+            #define LCD_WIDTH 160
+            #define LCD_HEIGHT 144
+            #define SCALE ((PLAYDATE_WIDTH / LCD_WIDTH < PLAYDATE_HEIGHT / LCD_HEIGHT) ? (PLAYDATE_WIDTH / LCD_WIDTH) : (PLAYDATE_HEIGHT / LCD_HEIGHT))
+            #define LCD_OFFSET_X ((PLAYDATE_WIDTH - LCD_WIDTH * SCALE) / 2)
+            #define LCD_OFFSET_Y ((PLAYDATE_HEIGHT - LCD_HEIGHT * SCALE) / 2)
+            
+            for(int y = 0; y < LCD_HEIGHT; y++){
+                for(int x = 0; x < LCD_WIDTH; x++){
                     uint8_t *pixels = !context->gb.display.back_fb_enabled ? context->gb.display.back_fb[y] : context->gb.display.front_fb[y];
-                    
-                    int d_row1 = y2 & 3;
-                    int d_row2 = (y2 + 1) & 3;
-                    
-                    int x2 = PGB_LCD_X;
-                    
-                    int fb_index1 = lcd_rows;
-                    int fb_index2 = lcd_rows + row_offset;
-                    
-                    for(int x = 0; x < LCD_WIDTH; x++){
-                        int x3 = x2 + 1;
-                        int palette = pixels[x] & 3;
-                        
-                        int d_col2 = x2 & 3;
-                        int d_col3 = x3 & 3;
-                        
-                        int mask2 = (1 << (7 - (x2 & 7)));
-                        int mask3 = (1 << (7 - (x3 & 7)));
-                        
-                        framebuffer[fb_index1] ^= (-(PGB_patterns[palette][d_row1][d_col2]) ^ framebuffer[fb_index1]) & mask2;
-                        framebuffer[fb_index1] ^= (-(PGB_patterns[palette][d_row1][d_col3]) ^ framebuffer[fb_index1]) & mask3;
-                        
-                        if(y_offset == 2){
-                            framebuffer[fb_index2] ^= (-(PGB_patterns[palette][d_row2][d_col2]) ^ framebuffer[fb_index2]) & mask2;
-                            framebuffer[fb_index2] ^= (-(PGB_patterns[palette][d_row2][d_col3]) ^ framebuffer[fb_index2]) & mask3;
-                        }
-                        
-                        x2 += 2;
-                        
-                        if((x2 & 7) == 0){
-                            fb_index1 += 1;
-                            fb_index2 += 1;
+                    int palette = pixels[x] & 3;
+            
+                    for (int i = 0; i < SCALE; i++) {
+                        for (int j = 0; j < SCALE; j++) {
+                            int x2 = LCD_OFFSET_X + x * SCALE + i;
+                            int y2 = LCD_OFFSET_Y + y * SCALE + j;
+            
+                            int d_row1 = y2 & 3;
+                            int d_col2 = x2 & 3;
+            
+                            int mask2 = (1 << (7 - (x2 & 7)));
+            
+                            int fb_index = y2 * LCD_ROWSIZE + x2 / 8;
+            
+                            framebuffer[fb_index] ^= (-(PGB_patterns[palette][d_row1][d_col2]) ^ framebuffer[fb_index]) & mask2;
                         }
                     }
-                    
-                    playdate->graphics->markUpdatedRows(y2, y2 + y_offset - 1);
-                        
-                    #if PGB_DEBUG && PGB_DEBUG_UPDATED_ROWS
-                    for(int i = 0; i < y_offset; i++){
-                        context->scene->debug_updatedRows[y2 + i] = true;
-                    }
-                    #endif
                 }
-                
-                y2 += y_offset;
-                lcd_rows += (y_offset == 1) ? row_offset : row_offset2;
-                
-                if(!single_line){
-                    skip_counter++;
-                }
+            }
+            
+            for(int y = LCD_OFFSET_Y; y < LCD_OFFSET_Y + LCD_HEIGHT * SCALE; y++){
+                playdate->graphics->markUpdatedRows(y, y + 1);
             }
         }
         
