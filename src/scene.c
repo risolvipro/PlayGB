@@ -16,7 +16,8 @@ PGB_Scene* PGB_Scene_new(void) {
     scene->menu = PGB_Scene_menu;
     scene->free = PGB_Scene_free;
     
-    scene->preferredFrameRate = 30;
+    scene->preferredRefreshRate = 30;
+    scene->refreshRateCompensation = 0;
     
     return scene;
 }

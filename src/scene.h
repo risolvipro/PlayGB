@@ -14,7 +14,8 @@
 typedef struct PGB_Scene {
     void *managedObject;
     
-    unsigned int preferredFrameRate;
+    float preferredRefreshRate;
+    float refreshRateCompensation;
     
     void(*update)(void *object);
     void(*menu)(void *object);

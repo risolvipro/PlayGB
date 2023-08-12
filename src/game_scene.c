@@ -24,11 +24,8 @@ static void PGB_GameScene_update(void *object);
 static void PGB_GameScene_menu(void *object);
 static void PGB_GameScene_saveGame(PGB_GameScene *gameScene);
 static void PGB_GameScene_refreshMenu(PGB_GameScene *gameScene);
+static void PGB_GameScene_generateBitmask(void);
 static void PGB_GameScene_free(void *object);
-
-static uint8_t gb_rom_read(struct gb_s *gb, const uint_fast32_t addr);
-static uint8_t gb_cart_ram_read(struct gb_s *gb, const uint_fast32_t addr);
-static void gb_cart_ram_write(struct gb_s *gb, const uint_fast32_t addr, const uint8_t val);
 
 static uint8_t *read_rom_to_ram(const char *filename);
 
@@ -39,6 +36,9 @@ static void gb_error(struct gb_s *gb, const enum gb_error_e gb_err, const uint16
 
 static const char *startButtonText = "start";
 static const char *selectButtonText = "select";
+
+static uint8_t PGB_GameScene_bitmask[256][4][4];
+static bool PGB_GameScene_bitmask_done = false;
 
 PGB_GameScene* PGB_GameScene_new(const char *rom_filename){
     
@@ -53,7 +53,7 @@ PGB_GameScene* PGB_GameScene_new(const char *rom_filename){
     scene->menu = PGB_GameScene_menu;
     scene->free = PGB_GameScene_free;
 
-    scene->preferredFrameRate = 60;
+    scene->preferredRefreshRate = 30;
 
     gameScene->rtc_timer = 0;
     
@@ -77,6 +77,8 @@ PGB_GameScene* PGB_GameScene_new(const char *rom_filename){
     gameScene->audioEnabled = preferences_sound_enabled;
     gameScene->audioLocked = false;
 
+    PGB_GameScene_generateBitmask();
+    
     PGB_GameScene_selector_init(gameScene);
     
     #if PGB_DEBUG && PGB_DEBUG_UPDATED_ROWS
@@ -89,20 +91,20 @@ PGB_GameScene* PGB_GameScene_new(const char *rom_filename){
     
     context->scene = gameScene;
     context->gb = (struct gb_s){};
-    context->rom = NULL;
-    context->cart_ram = NULL;
     
     uint8_t *rom = read_rom_to_ram(rom_filename);
     if(rom != NULL){
         context->rom = rom;
         
-        enum gb_init_error_e gb_ret = gb_init(&context->gb, gb_rom_read, gb_cart_ram_read, gb_cart_ram_write, gb_error, context);
+        enum gb_init_error_e gb_ret = gb_init(&context->gb, rom, gb_error, NULL);
         
         if(gb_ret == GB_INIT_NO_ERROR){
             char *save_filename = pgb_save_filename(rom_filename, false);
             gameScene->save_filename = save_filename;
             
             read_cart_ram_file(save_filename, &context->cart_ram, gb_get_save_size(&context->gb));
+            
+            context->gb.gb_cart_ram = context->cart_ram;
             
             if(gameScene->audioEnabled){
                 // init audio
@@ -189,30 +191,6 @@ void PGB_GameScene_selector_init(PGB_GameScene *gameScene){
     gameScene->selector.index = 0;
     gameScene->selector.startPressed = false;
     gameScene->selector.selectPressed = false;
-}
-
-/**
- * Returns a byte from the ROM file at the given address.
- */
-uint8_t gb_rom_read(struct gb_s *gb, const uint_fast32_t addr) {
-    PGB_GameSceneContext *context = gb->direct.priv;
-    return context->rom[addr];
-}
-
-/**
- * Returns a byte from the cartridge RAM at the given address.
- */
-uint8_t gb_cart_ram_read(struct gb_s *gb, const uint_fast32_t addr) {
-    PGB_GameSceneContext *context = gb->direct.priv;
-    return context->cart_ram[addr];
-}
-
-/**
- * Writes a given byte to the cartridge RAM at the given address.
- */
-void gb_cart_ram_write(struct gb_s *gb, const uint_fast32_t addr, const uint8_t val){
-    PGB_GameSceneContext *context = gb->direct.priv;
-    context->cart_ram[addr] = val;
 }
 
 /**
@@ -319,7 +297,7 @@ void gb_error(struct gb_s *gb, const enum gb_error_e gb_err, const uint16_t val)
     if(is_fatal){
         // write recovery .sav
         char *recovery_filename = pgb_save_filename(context->scene->rom_filename, true);
-        write_cart_ram_file(recovery_filename, &context->cart_ram, gb_get_save_size(gb));
+        write_cart_ram_file(recovery_filename, &context->gb.gb_cart_ram, gb_get_save_size(gb));
         
         pgb_free(recovery_filename);
         
@@ -404,6 +382,7 @@ void PGB_GameScene_update(void *object){
     gameScene->needsDisplay = false;
     
     if(gameScene->state == PGB_GameSceneStateLoaded){
+        
         PGB_GameSceneContext *context = gameScene->context;
                 
         PDButtons current;
@@ -426,10 +405,15 @@ void PGB_GameScene_update(void *object){
         #if PGB_DEBUG && PGB_DEBUG_UPDATED_ROWS
         memset(gameScene->debug_updatedRows, 0, LCD_ROWS);
         #endif
-        
+                
         gb_run_frame(&context->gb);
         
-        if(!context->gb.direct.frame_skip || !context->gb.display.frame_skip_count){
+        bool gb_draw = (!context->gb.direct.frame_skip || !context->gb.display.frame_skip_count);
+        
+        gameScene->scene->preferredRefreshRate = gb_draw ? 60 : 0;
+        gameScene->scene->refreshRateCompensation = gb_draw ? (1.0f / 60 - PGB_App->dt) : 0;
+        
+        if(gb_draw){
             
             uint8_t *framebuffer = playdate->graphics->getFrame();
             
@@ -459,38 +443,45 @@ void PGB_GameScene_update(void *object){
                     single_line = false;
                 }
                 
-                if(context->gb.display.changed_lines[y]){
-                    uint8_t *pixels = !context->gb.display.back_fb_enabled ? context->gb.display.back_fb[y] : context->gb.display.front_fb[y];
+                uint8_t *pixels;
+                uint8_t *old_pixels;
+                
+                if(context->gb.display.back_fb_enabled){
+                    pixels = gb_front_fb[y];
+                    old_pixels = gb_back_fb[y];
+                }
+                else {
+                    pixels = gb_back_fb[y];
+                    old_pixels = gb_front_fb[y];
+                }
+                
+                if(memcmp(pixels, old_pixels, LCD_WIDTH) != 0){
                     
                     int d_row1 = y2 & 3;
                     int d_row2 = (y2 + 1) & 3;
                     
-                    int x2 = PGB_LCD_X;
-                    
                     int fb_index1 = lcd_rows;
                     int fb_index2 = lcd_rows + row_offset;
                     
+                    memset(&framebuffer[fb_index1], 0x00, PGB_LCD_ROWSIZE);
+                    if(y_offset == 2){
+                        memset(&framebuffer[fb_index2], 0x00, PGB_LCD_ROWSIZE);
+                    }
+                    
+                    uint8_t bit = 0;
+                    
                     for(int x = 0; x < LCD_WIDTH; x++){
-                        int x3 = x2 + 1;
-                        int palette = pixels[x] & 3;
+                        uint8_t pixel = pixels[x];
                         
-                        int d_col2 = x2 & 3;
-                        int d_col3 = x3 & 3;
-                        
-                        int mask2 = (1 << (7 - (x2 & 7)));
-                        int mask3 = (1 << (7 - (x3 & 7)));
-                        
-                        framebuffer[fb_index1] ^= (-(PGB_patterns[palette][d_row1][d_col2]) ^ framebuffer[fb_index1]) & mask2;
-                        framebuffer[fb_index1] ^= (-(PGB_patterns[palette][d_row1][d_col3]) ^ framebuffer[fb_index1]) & mask3;
-                        
+                        framebuffer[fb_index1] |= PGB_GameScene_bitmask[pixel][bit][d_row1];
                         if(y_offset == 2){
-                            framebuffer[fb_index2] ^= (-(PGB_patterns[palette][d_row2][d_col2]) ^ framebuffer[fb_index2]) & mask2;
-                            framebuffer[fb_index2] ^= (-(PGB_patterns[palette][d_row2][d_col3]) ^ framebuffer[fb_index2]) & mask3;
+                            framebuffer[fb_index2] |= PGB_GameScene_bitmask[pixel][bit][d_row2];
                         }
                         
-                        x2 += 2;
+                        bit += 1;
                         
-                        if((x2 & 7) == 0){
+                        if(bit == 4){
+                            bit = 0;
                             fb_index1 += 1;
                             fb_index2 += 1;
                         }
@@ -562,6 +553,9 @@ void PGB_GameScene_update(void *object){
         }
     }
     else if(gameScene->state == PGB_GameSceneStateError){
+        
+        gameScene->scene->preferredRefreshRate = 30;
+        gameScene->scene->refreshRateCompensation = 0;
         
         if(needsDisplay){
             char *errorTitle = "Oh no!";
@@ -642,7 +636,45 @@ void PGB_GameScene_saveGame(PGB_GameScene *gameScene) {
         PGB_GameSceneContext *context = gameScene->context;
         
         if(gameScene->save_filename != NULL){
-            write_cart_ram_file(gameScene->save_filename, &context->cart_ram, gb_get_save_size(&context->gb));
+            write_cart_ram_file(gameScene->save_filename, &context->gb.gb_cart_ram, gb_get_save_size(&context->gb));
+        }
+    }
+}
+
+void PGB_GameScene_generateBitmask(void){
+    
+    if(PGB_GameScene_bitmask_done){
+        return;
+    }
+    
+    PGB_GameScene_bitmask_done = true;
+    
+    for(int c = 0; c < 256; c++){
+        int palette = c & 3;
+        
+        for(int y = 0; y < 4; y++){
+            
+            int x_offset = 0;
+            
+            for(int i = 0; i < 4; i++){
+                
+                int mask = 0x00;
+                
+                for(int x = 0; x < 2; x++){
+                    if(PGB_patterns[palette][y][x_offset + x] == 1){
+                        int n = i * 2 + x;
+                        mask |= (1 << (7 - n));
+                    }
+                }
+                
+                PGB_GameScene_bitmask[c][i][y] = mask;
+                
+                x_offset += 2;
+                
+                if(x_offset == 4){
+                    x_offset = 0;
+                }
+            }
         }
     }
 }

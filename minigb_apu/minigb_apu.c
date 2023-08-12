@@ -98,7 +98,7 @@ static struct chan {
 
 static int32_t vol_l, vol_r;
 
-static void set_note_freq(struct chan *c, const uint32_t freq)
+static inline void set_note_freq(struct chan *c, const uint32_t freq)
 {
 	/* Lowest expected value of freq is 64. */
 	c->freq_inc = freq * (uint32_t)(FREQ_INC_REF / AUDIO_SAMPLE_RATE);
@@ -185,18 +185,17 @@ static inline void update_sweep(struct chan *c)
 	}
 }
 
-static inline void update_square(int16_t *left, int16_t *right, const bool ch2, int len)
+static void update_square(int16_t *left, int16_t *right, const bool ch2, int len)
 {
-	uint32_t freq;
 	struct chan* c = chans + ch2;
 
 	if (!c->powered || !c->enabled)
 		return;
 
-	freq = DMG_CLOCK_FREQ_U / ((2048 - c->freq) << 5);
+    uint32_t freq = DMG_CLOCK_FREQ_U / ((2048 - c->freq) << 5);
 	set_note_freq(c, freq);
 	c->freq_inc *= 8;
-
+    
 	for (uint_fast16_t i = 0; i < len; i++) {
 		update_len(c);
 
@@ -236,7 +235,7 @@ static uint8_t wave_sample(const unsigned int pos, const unsigned int volume)
 {
 	uint8_t sample;
 
-	sample =  audio_mem[(0xFF30 + (int)(pos * 0.5f)) - AUDIO_ADDR_COMPENSATION];
+	sample =  audio_mem[(0xFF30 + pos / 2) - AUDIO_ADDR_COMPENSATION];
 	if (pos & 1) {
 		sample &= 0xF;
 	} else {
@@ -245,17 +244,15 @@ static uint8_t wave_sample(const unsigned int pos, const unsigned int volume)
 	return volume ? (sample >> (volume - 1)) : 0;
 }
 
-static inline void update_wave(int16_t *left, int16_t *right, int len)
+static void update_wave(int16_t *left, int16_t *right, int len)
 {
-	uint32_t freq;
 	struct chan *c = chans + 2;
 
 	if (!c->powered || !c->enabled)
 		return;
 
-	freq = (DMG_CLOCK_FREQ_U / 64) / (2048 - c->freq);
-	set_note_freq(c, freq);
-
+    uint32_t freq = (DMG_CLOCK_FREQ_U / 64) / (2048 - c->freq);
+    set_note_freq(c, freq);
 	c->freq_inc *= 32;
 
 	for (uint_fast16_t i = 0; i < len; i++) {
@@ -285,7 +282,7 @@ static inline void update_wave(int16_t *left, int16_t *right, int len)
 
 		{
 			/* First element is unused. */
-			int16_t div[] = { INT16_MAX, 1, 2, 4 };
+            static const int16_t div[] = { INT16_MAX, 1, 2, 4 };
 			sample = sample / (div[c->volume]);
 		}
 
@@ -299,7 +296,7 @@ static inline void update_wave(int16_t *left, int16_t *right, int len)
 	}
 }
 
-static inline void update_noise(int16_t *left, int16_t *right, int len)
+static void update_noise(int16_t *left, int16_t *right, int len)
 {
 	struct chan *c = chans + 3;
 
@@ -307,7 +304,7 @@ static inline void update_noise(int16_t *left, int16_t *right, int len)
 		return;
 
 	{
-		const uint32_t lfsr_div_lut[] = {
+		static const uint32_t lfsr_div_lut[] = {
 			8, 16, 32, 48, 64, 80, 96, 112
 		};
 		uint32_t freq;
@@ -500,7 +497,7 @@ void audio_write(const uint16_t addr, const uint8_t val)
 	case 0xFF11:
 	case 0xFF16:
 	case 0xFF20: {
-		const uint8_t duty_lookup[] = { 0x10, 0x30, 0x3C, 0xCF };
+		static const uint8_t duty_lookup[] = { 0x10, 0x30, 0x3C, 0xCF };
 		chans[i].len.load = val & 0x3f;
 		chans[i].square.duty = duty_lookup[val >> 6];
 		break;
@@ -565,7 +562,7 @@ void audio_init(void)
 
 	/* Initialise IO registers. */
 	{
-		const uint8_t regs_init[] = { 0x80, 0xBF, 0xF3, 0xFF, 0x3F,
+		static const uint8_t regs_init[] = { 0x80, 0xBF, 0xF3, 0xFF, 0x3F,
 					      0xFF, 0x3F, 0x00, 0xFF, 0x3F,
 					      0x7F, 0xFF, 0x9F, 0xFF, 0x3F,
 					      0xFF, 0xFF, 0x00, 0x00, 0x3F,
@@ -577,7 +574,7 @@ void audio_init(void)
 
 	/* Initialise Wave Pattern RAM. */
 	{
-		const uint8_t wave_init[] = { 0xac, 0xdd, 0xda, 0x48,
+        static const uint8_t wave_init[] = { 0xac, 0xdd, 0xda, 0x48,
 					      0x36, 0x02, 0xcf, 0x16,
 					      0x2c, 0x04, 0xe5, 0x2c,
 					      0xac, 0xdd, 0xda, 0x48 };
@@ -597,7 +594,7 @@ int audio_callback(void *context, int16_t *left, int16_t *right, int len)
     if(gameScene->audioLocked){
         return 0;
     }
-    
+
     struct chan *c1 = chans;
     struct chan *c2 = chans + 1;
     struct chan *c3 = chans + 2;

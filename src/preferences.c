@@ -94,6 +94,6 @@ void cpu_endian_to_big_endian(unsigned char *src, unsigned char *buffer, size_t 
         }
     }
     else {
-        *buffer = *src;
+        memcpy(buffer, src, size * len);
     }
 }

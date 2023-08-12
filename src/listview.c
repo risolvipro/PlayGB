@@ -71,16 +71,16 @@ void PGB_ListView_reload(PGB_ListView *listView){
 
 void PGB_ListView_update(PGB_ListView *listView){
     
-    PDButtons released;
-    playdate->system->getButtonState(NULL, NULL, &released);
+    PDButtons pushed;
+    playdate->system->getButtonState(NULL, &pushed, NULL);
     
-    if(released & kButtonDown){
+    if(pushed & kButtonDown){
         int nextIndex = listView->selectedItem + 1;
         if(nextIndex >= 0 && nextIndex < listView->items->length){
             PGB_ListView_selectItem(listView, nextIndex);
         }
     }
-    else if(released & kButtonUp){
+    else if(pushed & kButtonUp){
         int prevIndex = listView->selectedItem - 1;
         if(prevIndex >= 0 && prevIndex < listView->items->length){
             PGB_ListView_selectItem(listView, prevIndex);

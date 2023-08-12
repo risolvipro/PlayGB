@@ -28,7 +28,7 @@ typedef struct PGB_Application {
 extern PGB_Application *PGB_App;
 
 void PGB_init(void);
-void PGB_update(void);
+void PGB_update(float dt);
 void PGB_present(PGB_Scene *scene);
 void PGB_quit(void);
 

@@ -151,8 +151,9 @@ void PGB_LibraryScene_update(void *object) {
         
         if(needsDisplay){
             
-            char *title = "PlayGB";
-            char *message = "No ROMs found";
+            static const char *title = "PlayGB";
+            static const char *message1 = "Connect to a computer and";
+            static const char *message2 = "copy games to Data/*.playgb/games";
             
             playdate->graphics->clear(kColorWhite);
             
@@ -160,18 +161,24 @@ void PGB_LibraryScene_update(void *object) {
             
             int titleHeight = playdate->graphics->getFontHeight(PGB_App->titleFont);
             int messageHeight = playdate->graphics->getFontHeight(PGB_App->bodyFont);
+            int messageLineSpacing = 2;
             
-            int containerHeight = titleHeight + titleToMessageSpacing + messageHeight;
+            int containerHeight = titleHeight + titleToMessageSpacing + messageHeight * 2 + messageLineSpacing;
             int titleY = (float)(playdate->display->getHeight() - containerHeight) / 2;
             
             int titleX = (float)(playdate->display->getWidth() - playdate->graphics->getTextWidth(PGB_App->titleFont, title, strlen(title), kUTF8Encoding, 0)) / 2;
-            int messageX = (float)(playdate->display->getWidth() - playdate->graphics->getTextWidth(PGB_App->bodyFont, message, strlen(message), kUTF8Encoding, 0)) / 2;
+            int message1_X = (float)(playdate->display->getWidth() - playdate->graphics->getTextWidth(PGB_App->bodyFont, message1, strlen(message1), kUTF8Encoding, 0)) / 2;
+            int message2_X = (float)(playdate->display->getWidth() - playdate->graphics->getTextWidth(PGB_App->bodyFont, message2, strlen(message2), kUTF8Encoding, 0)) / 2;
+            
+            int message1_Y = titleY + titleHeight + titleToMessageSpacing;
+            int message2_Y = message1_Y + messageHeight + messageLineSpacing;
             
             playdate->graphics->setFont(PGB_App->titleFont);
             playdate->graphics->drawText(title, strlen(title), kUTF8Encoding, titleX, titleY);
             
             playdate->graphics->setFont(PGB_App->bodyFont);
-            playdate->graphics->drawText(message, strlen(message), kUTF8Encoding, messageX, titleY + titleHeight + titleToMessageSpacing);
+            playdate->graphics->drawText(message1, strlen(message1), kUTF8Encoding, message1_X, message1_Y);
+            playdate->graphics->drawText(message2, strlen(message2), kUTF8Encoding, message2_X, message2_Y);
         }
     }
 }

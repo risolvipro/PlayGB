@@ -29,11 +29,16 @@ void PGB_init(void) {
     PGB_App->subheadFont = playdate->graphics->loadFont("fonts/Asheville-Sans-14-Bold", NULL);
     PGB_App->labelFont = playdate->graphics->loadFont("fonts/Nontendo-Bold", NULL);
     
+    // custom frame rate delimiter
+    playdate->display->setRefreshRate(0);
+    
     PGB_LibraryScene *libraryScene = PGB_LibraryScene_new();
     PGB_present(libraryScene->scene);
 }
 
-void PGB_update(void) {
+void PGB_update(float dt) {
+    
+    PGB_App->dt = dt;
     
     if(PGB_App->scene != NULL){
         void *managedObject = PGB_App->scene->managedObject;
@@ -55,9 +60,26 @@ void PGB_update(void) {
         
         playdate->system->removeAllMenuItems();
         PGB_App->scene->menu(PGB_App->scene->managedObject);
-        
-        playdate->display->setRefreshRate(PGB_App->scene->preferredFrameRate);
     }
+        
+    #if PGB_DEBUG
+    playdate->display->setRefreshRate(60);
+    #else
+    
+    float refreshRate = 30;
+    float compensation = 0;
+    
+    if(PGB_App->scene != NULL){
+        refreshRate = PGB_App->scene->preferredRefreshRate;
+        compensation = PGB_App->scene->refreshRateCompensation;
+    }
+    
+    if(refreshRate > 0){
+        float refreshInterval = 1.0f / refreshRate + compensation;
+        while(playdate->system->getElapsedTime() < refreshInterval);
+    }
+    
+    #endif
 }
 
 void PGB_present(PGB_Scene *scene) {

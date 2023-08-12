@@ -39,9 +39,7 @@ int update(void* userdata) {
     float dt = pd->system->getElapsedTime();
     pd->system->resetElapsedTime();
     
-    PGB_App->dt = dt;
-    
-    PGB_update();
+    PGB_update(dt);
     
     return 1;
 }

@@ -179,11 +179,11 @@ struct cpu_registers_s
 			{
 				struct
 				{
-					unsigned unused : 4;
-					unsigned c : 1; /* Carry flag. */
-					unsigned h : 1; /* Half carry flag. */
-					unsigned n : 1; /* Add/sub flag. */
-					unsigned z : 1; /* Zero flag. */
+					uint8_t unused : 4;
+					uint8_t c : 1; /* Carry flag. */
+					uint8_t h : 1; /* Half carry flag. */
+					uint8_t n : 1; /* Add/sub flag. */
+					uint8_t z : 1; /* Zero flag. */
 				} f_bits;
 				uint8_t f;
 			};
@@ -243,9 +243,9 @@ struct gb_registers_s
 	{
 		struct
 		{
-			unsigned tac_rate : 2;	/* Input clock select */
-			unsigned tac_enable : 1;	/* Timer enable */
-			unsigned unused : 5;
+			uint8_t tac_rate : 2;	/* Input clock select */
+			uint8_t tac_enable : 1;	/* Timer enable */
+			uint8_t unused : 5;
 		};
 		uint8_t TAC;
 	};
@@ -329,6 +329,9 @@ enum gb_serial_rx_ret_e
 	GB_SERIAL_RX_NO_CONNECTION = 1
 };
 
+static uint8_t gb_front_fb[LCD_HEIGHT][LCD_WIDTH];
+static uint8_t gb_back_fb[LCD_HEIGHT][LCD_WIDTH];
+
 /**
  * Emulator context.
  *
@@ -337,33 +340,8 @@ enum gb_serial_rx_ret_e
  */
 struct gb_s
 {
-	/**
-	 * Return byte from ROM at given address.
-	 *
-	 * \param gb_s	emulator context
-	 * \param addr	address
-	 * \return		byte at address in ROM
-	 */
-	uint8_t (*gb_rom_read)(struct gb_s*, const uint_fast32_t addr);
-
-	/**
-	 * Return byte from cart RAM at given address.
-	 *
-	 * \param gb_s	emulator context
-	 * \param addr	address
-	 * \return		byte at address in RAM
-	 */
-	uint8_t (*gb_cart_ram_read)(struct gb_s*, const uint_fast32_t addr);
-
-	/**
-	 * Write byte to cart RAM at given address.
-	 *
-	 * \param gb_s	emulator context
-	 * \param addr	address
-	 * \param val	value to write to address in RAM
-	 */
-	void (*gb_cart_ram_write)(struct gb_s*, const uint_fast32_t addr,
-				  const uint8_t val);
+    uint8_t *gb_rom;
+    uint8_t *gb_cart_ram;
 
 	/**
 	 * Notify front-end of error.
@@ -380,17 +358,17 @@ struct gb_s
 
 	struct
 	{
-		unsigned gb_halt	: 1;
-		unsigned gb_ime		: 1;
-		unsigned gb_bios_enable : 1;
-		unsigned gb_frame	: 1; /* New frame drawn. */
+		uint8_t gb_halt	: 1;
+		uint8_t gb_ime		: 1;
+		uint8_t gb_bios_enable : 1;
+		uint8_t gb_frame	: 1; /* New frame drawn. */
 
 #		define LCD_HBLANK	0
 #		define LCD_VBLANK	1
 #		define LCD_SEARCH_OAM	2
 #		define LCD_TRANSFER	3
-		unsigned lcd_mode	: 2;
-		unsigned lcd_blank	: 1;
+		uint8_t lcd_mode	: 2;
+		uint8_t lcd_blank	: 1;
 	};
 
 	/* Cartridge information:
@@ -462,14 +440,10 @@ struct gb_s
 		uint8_t WY;
         
 		/* Only support 30fps frame skip. */
-		unsigned frame_skip_count : 1;
+		uint8_t frame_skip_count : 1;
         
         /* Playdate custom implementation */
-        unsigned back_fb_enabled : 1;
-        
-        uint8_t front_fb[LCD_HEIGHT][LCD_WIDTH];
-        uint8_t back_fb[LCD_HEIGHT][LCD_WIDTH];
-        uint8_t changed_lines[LCD_HEIGHT];
+        uint8_t back_fb_enabled : 1;
 	} display;
 
 	/**
@@ -484,21 +458,21 @@ struct gb_s
 		/* Set to enable interlacing. Interlacing will start immediately
 		 * (at the next line drawing).
 		 */
-		unsigned frame_skip : 1;
-        unsigned sound : 1;
+		uint8_t frame_skip : 1;
+        uint8_t sound : 1;
         
 		union
 		{
 			struct
 			{
-				unsigned a		: 1;
-				unsigned b		: 1;
-				unsigned select	: 1;
-				unsigned start	: 1;
-				unsigned right	: 1;
-				unsigned left	: 1;
-				unsigned up		: 1;
-				unsigned down	: 1;
+				uint8_t a		: 1;
+				uint8_t b		: 1;
+				uint8_t select	: 1;
+				uint8_t start	: 1;
+				uint8_t right	: 1;
+				uint8_t left	: 1;
+				uint8_t up		: 1;
+				uint8_t down	: 1;
 			} joypad_bits;
 			uint8_t joypad;
 		};
@@ -570,17 +544,17 @@ uint8_t __gb_read(struct gb_s *gb, const uint_fast16_t addr)
 	case 0x1:
 	case 0x2:
 	case 0x3:
-		return gb->gb_rom_read(gb, addr);
+		return gb->gb_rom[addr];
 
 	case 0x4:
 	case 0x5:
 	case 0x6:
 	case 0x7:
-		if(gb->mbc == 1 && gb->cart_mode_select)
-			return gb->gb_rom_read(gb,
-					       addr + ((gb->selected_rom_bank & 0x1F) - 1) * ROM_BANK_SIZE);
-		else
-			return gb->gb_rom_read(gb, addr + (gb->selected_rom_bank - 1) * ROM_BANK_SIZE);
+            if(gb->mbc == 1 && gb->cart_mode_select)
+                return gb->gb_rom[addr + ((gb->selected_rom_bank & 0x1F) - 1) * ROM_BANK_SIZE];
+            else
+                return gb->gb_rom[addr + (gb->selected_rom_bank - 1) * ROM_BANK_SIZE];
+            
 
 	case 0x8:
 	case 0x9:
@@ -595,11 +569,11 @@ uint8_t __gb_read(struct gb_s *gb, const uint_fast16_t addr)
 			else if((gb->cart_mode_select || gb->mbc != 1) &&
 					gb->cart_ram_bank < gb->num_ram_banks)
 			{
-				return gb->gb_cart_ram_read(gb, addr - CART_RAM_ADDR +
-							    (gb->cart_ram_bank * CRAM_BANK_SIZE));
+				return gb->gb_cart_ram[addr - CART_RAM_ADDR +
+							    (gb->cart_ram_bank * CRAM_BANK_SIZE)];
 			}
 			else
-				return gb->gb_cart_ram_read(gb, addr - CART_RAM_ADDR);
+				return gb->gb_cart_ram[addr - CART_RAM_ADDR];
 		}
 
 		return 0xFF;
@@ -608,7 +582,7 @@ uint8_t __gb_read(struct gb_s *gb, const uint_fast16_t addr)
 		return gb->wram[addr - WRAM_0_ADDR];
 
 	case 0xD:
-		return gb->wram[addr - WRAM_1_ADDR + WRAM_BANK_SIZE];
+		return gb->wram[addr - WRAM_0_ADDR];
 
 	case 0xE:
 		return gb->wram[addr - ECHO_ADDR];
@@ -650,7 +624,7 @@ uint8_t __gb_read(struct gb_s *gb, const uint_fast16_t addr)
                 return gb->hram[addr - IO_ADDR] | ortab[addr - IO_ADDR];
             }
 		}
-
+            
 		/* IO and Interrupts. */
 		switch(addr & 0xFF)
 		{
@@ -788,7 +762,6 @@ void __gb_write(struct gb_s *gb, const uint_fast16_t addr, const uint8_t val)
 		}
 		else if(gb->mbc == 5)
 			gb->selected_rom_bank = (val & 0x01) << 8 | (gb->selected_rom_bank & 0xFF);
-
 		gb->selected_rom_bank = gb->selected_rom_bank & gb->num_rom_banks_mask;
 		return;
 
@@ -826,11 +799,10 @@ void __gb_write(struct gb_s *gb, const uint_fast16_t addr, const uint8_t val)
 			else if(gb->cart_mode_select &&
 					gb->cart_ram_bank < gb->num_ram_banks)
 			{
-				gb->gb_cart_ram_write(gb,
-						      addr - CART_RAM_ADDR + (gb->cart_ram_bank * CRAM_BANK_SIZE), val);
+				gb->gb_cart_ram[addr - CART_RAM_ADDR + (gb->cart_ram_bank * CRAM_BANK_SIZE)] = val;
 			}
 			else if(gb->num_ram_banks)
-				gb->gb_cart_ram_write(gb, addr - CART_RAM_ADDR, val);
+				gb->gb_cart_ram[addr - CART_RAM_ADDR] = val;
 		}
 
 		return;
@@ -1051,7 +1023,7 @@ uint8_t __gb_execute_cb(struct gb_s *gb)
 	{
 	case 0x06:
 	case 0x86:
-    	case 0xC6:
+    case 0xC6:
 		inst_cycles += 8;
     	break;
     	case 0x46:
@@ -1250,14 +1222,7 @@ static int compare_sprites(const void *in1, const void *in2)
 
 void __gb_draw_line(struct gb_s *gb)
 {
-    
-	if(gb->direct.frame_skip && !gb->display.frame_skip_count)
-		return;
-    
-    uint8_t *front_pixels = gb->display.front_fb[gb->gb_reg.LY];
-    uint8_t *back_pixels = gb->display.back_fb[gb->gb_reg.LY];
-
-    uint8_t *pixels = gb->display.back_fb_enabled ? back_pixels : front_pixels;
+    uint8_t *pixels = gb->display.back_fb_enabled ? gb_back_fb[gb->gb_reg.LY] : gb_front_fb[gb->gb_reg.LY];
     
     /* If background is enabled, draw it. */
 	if(gb->gb_reg.LCDC & LCDC_BG_ENABLE)
@@ -1325,10 +1290,10 @@ void __gb_draw_line(struct gb_s *gb)
 
 			/* copy background */
 			uint8_t c = (t1 & 0x1) | ((t2 & 0x1) << 1);
-			pixels[disp_x] = gb->display.bg_palette[c];
-			pixels[disp_x] |= LCD_PALETTE_BG;
-			t1 = t1 >> 1;
-			t2 = t2 >> 1;
+            pixels[disp_x] = (gb->display.bg_palette[c] | LCD_PALETTE_BG);
+            
+			t1 >>= 1;
+			t2 >>= 1;
 			px++;
 		}
 	}
@@ -1388,10 +1353,10 @@ void __gb_draw_line(struct gb_s *gb)
 
 			// copy window
 			uint8_t c = (t1 & 0x1) | ((t2 & 0x1) << 1);
-			pixels[disp_x] = gb->display.bg_palette[c];
-			pixels[disp_x] |= LCD_PALETTE_BG;
-			t1 = t1 >> 1;
-			t2 = t2 >> 1;
+            pixels[disp_x] = (gb->display.bg_palette[c] | LCD_PALETTE_BG);
+            
+			t1 >>= 1;
+			t2 >>= 1;
 			px++;
 		}
 
@@ -1450,21 +1415,18 @@ void __gb_draw_line(struct gb_s *gb)
 			sprite_number != 0xFF;
 			sprite_number--)
 		{
-			uint8_t s = sprite_number;
 #endif
-            
-            uint8_t s_4 = s * 4;
+            uint8_t s_4 = sprite_number * 4;
             
 			/* Sprite Y position. */
 			uint8_t OY = gb->oam[s_4];
-			/* Sprite X position. */
-			uint8_t OX = gb->oam[s_4 + 1];
-			/* Sprite Tile/Pattern Number. */
-			uint8_t OT = gb->oam[s_4 + 2]
-				     & (gb->gb_reg.LCDC & LCDC_OBJ_SIZE ? 0xFE : 0xFF);
-			/* Additional attributes. */
-			uint8_t OF = gb->oam[s_4 + 3];
-
+            /* Sprite X position. */
+            uint8_t OX = gb->oam[s_4 + 1];
+            /* Sprite Tile/Pattern Number. */
+            uint8_t OT = gb->oam[s_4 + 2] & (gb->gb_reg.LCDC & LCDC_OBJ_SIZE ? 0xFE : 0xFF);
+            /* Additional attributes. */
+            uint8_t OF = gb->oam[s_4 + 3];
+            
 #if !PEANUT_GB_HIGH_LCD_ACCURACY
 			/* If sprite isn't on this line, continue. */
 			if(gb->gb_reg.LY +
@@ -1472,11 +1434,11 @@ void __gb_draw_line(struct gb_s *gb)
 					gb->gb_reg.LY + 16 < OY)
 				continue;
 #endif
-
+            
 			/* Continue if sprite not visible. */
-			if(OX == 0 || OX >= 168)
-				continue;
-
+            if(OX == 0 || OX >= 168)
+                continue;
+                        
 			// y flip
 			uint8_t py = gb->gb_reg.LY - OY + 16;
 
@@ -1510,41 +1472,24 @@ void __gb_draw_line(struct gb_s *gb)
 			// copy tile
 			t1 >>= shift;
 			t2 >>= shift;
-
+            
+            uint8_t c_add = (OF & OBJ_PALETTE) ? 4 : 0;
+            
 			for(uint8_t disp_x = start; disp_x != end; disp_x += dir)
 			{
 				uint8_t c = (t1 & 0x1) | ((t2 & 0x1) << 1);
 				// check transparency / sprite overlap / background overlap
-#if 0
 
-				if(c
-						//	&& OX <= fx[disp_x]
-						&& !((OF & OBJ_PRIORITY)
-						     && ((pixels[disp_x] & 0x3)
-							 && fx[disp_x] == 0xFE)))
-#else
-				if(c && !(OF & OBJ_PRIORITY
-						&& pixels[disp_x] & 0x3))
-#endif
-				{
+				if(c && !((OF & OBJ_PRIORITY) && pixels[disp_x] & 0x3)){
 					/* Set pixel colour. */
-					pixels[disp_x] = (OF & OBJ_PALETTE)
-							 ? gb->display.sp_palette[c + 4]
-							 : gb->display.sp_palette[c];
-					/* Set pixel palette (OBJ0 or OBJ1). */
-					pixels[disp_x] |= (OF & OBJ_PALETTE);
-					/* Deselect BG palette. */
-					pixels[disp_x] &= ~LCD_PALETTE_BG;
+                    pixels[disp_x] = ((gb->display.sp_palette[c + c_add] | (OF & OBJ_PALETTE)) & ~LCD_PALETTE_BG);
 				}
 
-				t1 = t1 >> 1;
-				t2 = t2 >> 1;
+                t1 >>= 1;
+                t2 >>= 1;
 			}
 		}
 	}
-        
-    uint8_t changed = (memcmp(front_pixels, back_pixels, LCD_WIDTH) != 0);
-    gb->display.changed_lines[gb->gb_reg.LY] = changed;
 }
 #endif
 
@@ -1553,7 +1498,6 @@ void __gb_draw_line(struct gb_s *gb)
  */
 void __gb_step_cpu(struct gb_s *gb)
 {
-	uint8_t opcode, inst_cycles;
 	static const uint8_t op_cycles[0x100] =
 	{
 		/* *INDENT-OFF* */
@@ -1587,7 +1531,7 @@ void __gb_step_cpu(struct gb_s *gb)
 		{
 			/* Disable interrupts */
 			gb->gb_ime = 0;
-
+            
 			/* Push Program Counter */
 			__gb_write(gb, --gb->cpu_reg.sp, gb->cpu_reg.pc >> 8);
 			__gb_write(gb, --gb->cpu_reg.sp, gb->cpu_reg.pc & 0xFF);
@@ -1620,15 +1564,15 @@ void __gb_step_cpu(struct gb_s *gb)
 			}
 		}
 	}
-
+    
 	/* Obtain opcode */
-	opcode = (gb->gb_halt ? 0x00 : __gb_read(gb, gb->cpu_reg.pc++));
-	inst_cycles = op_cycles[opcode];
+    uint8_t opcode = (gb->gb_halt ? 0x00 : __gb_read(gb, gb->cpu_reg.pc++));
+    uint8_t inst_cycles = op_cycles[opcode];
     
     /* Execute opcode */
     
     static const void* op_table[] = {
-        &&_0x00, &&_0x01, &&_0x02, &&_0x03, &&_0x04, &&_0x05, &&_0x06, &&_0x07, &&_0x08, &&_0x09,
+        &&exit, &&_0x01, &&_0x02, &&_0x03, &&_0x04, &&_0x05, &&_0x06, &&_0x07, &&_0x08, &&_0x09,
         &&_0x0A, &&_0x0B, &&_0x0C, &&_0x0D, &&_0x0E, &&_0x0F, &&_0x10, &&_0x11, &&_0x12, &&_0x13,
         &&_0x14, &&_0x15, &&_0x16, &&_0x17, &&_0x18, &&_0x19, &&_0x1A, &&_0x1B, &&_0x1C, &&_0x1D,
         &&_0x1E, &&_0x1F, &&_0x20, &&_0x21, &&_0x22, &&_0x23, &&_0x24, &&_0x25, &&_0x26, &&_0x27,
@@ -3643,7 +3587,7 @@ void __gb_step_cpu(struct gb_s *gb)
                 gb->counter.serial_count = 0;
             }
         }
-        
+                
         /* TIMA register timing */
         /* TODO: Change tac_enable to struct of TAC timer control bits. */
         if(gb->gb_reg.tac_enable)
@@ -3652,9 +3596,11 @@ void __gb_step_cpu(struct gb_s *gb)
             
             gb->counter.tima_count += inst_cycles;
             
-            while(gb->counter.tima_count >= TAC_CYCLES[gb->gb_reg.tac_rate])
+            uint_fast16_t tac_cycle = TAC_CYCLES[gb->gb_reg.tac_rate];
+            
+            while(gb->counter.tima_count >= tac_cycle)
             {
-                gb->counter.tima_count -= TAC_CYCLES[gb->gb_reg.tac_rate];
+                gb->counter.tima_count -= tac_cycle;
                 
                 if(++gb->gb_reg.TIMA == 0)
                 {
@@ -3690,7 +3636,8 @@ void __gb_step_cpu(struct gb_s *gb)
                 gb->gb_reg.STAT &= 0xFB;
             
             /* Next line */
-            gb->gb_reg.LY = (gb->gb_reg.LY + 1) % LCD_VERT_LINES;
+            uint16_t LY_1 = gb->gb_reg.LY + 1;
+            gb->gb_reg.LY = (LY_1 >= LCD_VERT_LINES) ? LY_1 - LCD_VERT_LINES : LY_1;
             
             /* VBLANK Start */
             if(gb->gb_reg.LY == LCD_HEIGHT)
@@ -3752,7 +3699,7 @@ void __gb_step_cpu(struct gb_s *gb)
         {
             gb->lcd_mode = LCD_TRANSFER;
     #if ENABLE_LCD
-            if(!gb->lcd_blank)
+            if(!gb->lcd_blank && !(gb->direct.frame_skip && !gb->display.frame_skip_count))
                 __gb_draw_line(gb);
     #endif
         }
@@ -3762,7 +3709,7 @@ void __gb_step_cpu(struct gb_s *gb)
 void gb_run_frame(struct gb_s *gb)
 {
 	gb->gb_frame = 0;
-
+    
 	while(!gb->gb_frame)
 		__gb_step_cpu(gb);
 }
@@ -3777,7 +3724,7 @@ uint_fast32_t gb_get_save_size(struct gb_s *gb)
 	{
 		0x00, 0x800, 0x2000, 0x8000, 0x20000
 	};
-	uint8_t ram_size = gb->gb_rom_read(gb, ram_size_location);
+	uint8_t ram_size = gb->gb_rom[ram_size_location];
 	return ram_sizes[ram_size];
 }
 
@@ -3804,7 +3751,7 @@ uint8_t gb_colour_hash(struct gb_s *gb)
 	uint8_t x = 0;
 
 	for(uint16_t i = ROM_TITLE_START_ADDR; i <= ROM_TITLE_END_ADDR; i++)
-		x += gb->gb_rom_read(gb, i);
+		x += gb->gb_rom[i];
 
 	return x;
 }
@@ -3874,9 +3821,7 @@ void gb_reset(struct gb_s *gb)
  * the CPU.
  */
 enum gb_init_error_e gb_init(struct gb_s *gb,
-			     uint8_t (*gb_rom_read)(struct gb_s*, const uint_fast32_t),
-			     uint8_t (*gb_cart_ram_read)(struct gb_s*, const uint_fast32_t),
-			     void (*gb_cart_ram_write)(struct gb_s*, const uint_fast32_t, const uint8_t),
+			     uint8_t *gb_rom,
 			     void (*gb_error)(struct gb_s*, const enum gb_error_e, const uint16_t),
 			     void *priv)
 {
@@ -3909,9 +3854,7 @@ enum gb_init_error_e gb_init(struct gb_s *gb,
 	};
 	const uint8_t num_ram_banks[] = { 0, 1, 1, 4, 16, 8 };
 
-	gb->gb_rom_read = gb_rom_read;
-	gb->gb_cart_ram_read = gb_cart_ram_read;
-	gb->gb_cart_ram_write = gb_cart_ram_write;
+	gb->gb_rom = gb_rom;
 	gb->gb_error = gb_error;
 	gb->direct.priv = priv;
 
@@ -3926,24 +3869,24 @@ enum gb_init_error_e gb_init(struct gb_s *gb,
 		uint8_t x = 0;
 
 		for(uint16_t i = 0x0134; i <= 0x014C; i++)
-			x = x - gb->gb_rom_read(gb, i) - 1;
+			x = x - gb->gb_rom[i] - 1;
 
-		if(x != gb->gb_rom_read(gb, ROM_HEADER_CHECKSUM_LOC))
+		if(x != gb->gb_rom[ROM_HEADER_CHECKSUM_LOC])
 			return GB_INIT_INVALID_CHECKSUM;
 	}
 
 	/* Check if cartridge type is supported, and set MBC type. */
 	{
-		const uint8_t mbc_value = gb->gb_rom_read(gb, mbc_location);
+		const uint8_t mbc_value = gb->gb_rom[mbc_location];
 
 		if(mbc_value > sizeof(cart_mbc) - 1 ||
 				(gb->mbc = cart_mbc[mbc_value]) == 255u)
 			return GB_INIT_CARTRIDGE_UNSUPPORTED;
 	}
 
-	gb->cart_ram = cart_ram[gb->gb_rom_read(gb, mbc_location)];
-	gb->num_rom_banks_mask = num_rom_banks_mask[gb->gb_rom_read(gb, bank_count_location)] - 1;
-	gb->num_ram_banks = num_ram_banks[gb->gb_rom_read(gb, ram_size_location)];
+	gb->cart_ram = cart_ram[gb->gb_rom[mbc_location]];
+	gb->num_rom_banks_mask = num_rom_banks_mask[gb->gb_rom[bank_count_location]] - 1;
+	gb->num_ram_banks = num_ram_banks[gb->gb_rom[ram_size_location]];
 
 	gb->lcd_blank = 0;
     
@@ -3970,7 +3913,7 @@ const char* gb_get_rom_name(struct gb_s* gb, char *title_str)
 
 	for(; title_loc <= title_end; title_loc++)
 	{
-		const char title_char = gb->gb_rom_read(gb, title_loc);
+		const char title_char = gb->gb_rom[title_loc];
 
 		if(title_char >= ' ' && title_char <= '_')
 		{
@@ -3994,11 +3937,9 @@ void gb_init_lcd(struct gb_s *gb)
     
     gb->display.back_fb_enabled = 0;
     
-    memset(gb->display.front_fb, 0, sizeof(gb->display.front_fb));
-    memset(gb->display.back_fb, 0, sizeof(gb->display.back_fb));
-    
-    memset(gb->display.changed_lines, 0, sizeof(gb->display.changed_lines));
-    
+    memset(gb_front_fb, 0, sizeof(gb_front_fb));
+    memset(gb_back_fb, 0, sizeof(gb_back_fb));
+        
 	gb->display.window_clear = 0;
 	gb->display.WY = 0;
     

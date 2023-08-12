@@ -14,13 +14,14 @@
 
 extern PlaydateAPI *playdate;
 
-#define PGB_DEBUG 0
-#define PGB_DEBUG_UPDATED_ROWS 1
+#define PGB_DEBUG false
+#define PGB_DEBUG_UPDATED_ROWS false
 
 #define PGB_LCD_WIDTH 320
 #define PGB_LCD_HEIGHT 240
+#define PGB_LCD_ROWSIZE 40
 
-#define PGB_LCD_X 32 // must be even
+#define PGB_LCD_X 32 // multiple of 8
 #define PGB_LCD_Y 0
 
 #define PGB_MAX(x, y) (((x) > (y)) ? (x) : (y))
