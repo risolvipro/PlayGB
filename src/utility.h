@@ -36,6 +36,11 @@ char* string_copy(const char *string);
 
 char* pgb_save_filename(const char *filename, bool isRecovery);
 
+float pgb_easeInOutQuad(float x);
+
+void pgb_fillRoundRect(PDRect rect, int radius, LCDColor color);
+void pgb_drawRoundRect(PDRect rect, int radius, int lineWidth, LCDColor color);
+
 void* pgb_malloc(size_t size);
 void* pgb_realloc(void *ptr, size_t size);
 void* pgb_calloc(size_t count, size_t size);

@@ -39,6 +39,7 @@ void PGB_init(void) {
 void PGB_update(float dt) {
     
     PGB_App->dt = dt;
+    PGB_App->crankChange = playdate->system->getCrankChange();
     
     if(PGB_App->scene != NULL){
         void *managedObject = PGB_App->scene->managedObject;

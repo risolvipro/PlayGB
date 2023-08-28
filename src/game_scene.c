@@ -405,7 +405,7 @@ void PGB_GameScene_update(void *object){
         #if PGB_DEBUG && PGB_DEBUG_UPDATED_ROWS
         memset(gameScene->debug_updatedRows, 0, LCD_ROWS);
         #endif
-                
+        
         gb_run_frame(&context->gb);
         
         bool gb_draw = (!context->gb.direct.frame_skip || !context->gb.display.frame_skip_count);

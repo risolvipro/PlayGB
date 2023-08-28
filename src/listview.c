@@ -9,11 +9,20 @@
 #include "app.h"
 
 static PGB_ListItem* PGB_ListItem_new(void);
-static void PGB_ListView_selectItem(PGB_ListView *listView, unsigned int index);
+static void PGB_ListView_selectItem(PGB_ListView *listView, unsigned int index, bool animated);
 static void PGB_ListItem_super_free(PGB_ListItem *item);
 
 static int PGB_ListView_rowHeight = 32;
 static int PGB_ListView_inset = 14;
+static int PGB_ListView_scrollInset = 4;
+static int PGB_ListView_scrollIndicatorWidth = 4;
+static int PGB_ListView_scrollIndicatorMinHeight = 40;
+
+static float PGB_ListView_repeatInterval1 = 0.15;
+static float PGB_ListView_repeatInterval2 = 2;
+
+static float PGB_ListView_crankResetMinTime = 2;
+static float PGB_ListView_crankMinChange = 30;
 
 PGB_ListView* PGB_ListView_new(void) {
     PGB_ListView *listView = pgb_malloc(sizeof(PGB_ListView));
@@ -23,12 +32,35 @@ PGB_ListView* PGB_ListView_new(void) {
     listView->contentSize = 0;
     listView->contentOffset = 0;
     
+    listView->scroll = (PGB_ListViewScroll){
+        .active = false,
+        .start = 0,
+        .end = 0,
+        .time = 0,
+        .duration = 0.15,
+        .indicatorVisible = false,
+        .indicatorOffset = 0,
+        .indicatorHeight = 0
+    };
+    
     listView->selectedItem = -1;
+    
+    listView->direction = PGB_ListViewDirectionNone;
+    
+    listView->repeatLevel = 0;
+    listView->repeatIncrementTime = 0;
+    listView->repeatTime = 0;
+
+    listView->crankChange = 0;
+    listView->crankResetTime = 0;
     
     listView->model = (PGB_ListViewModel){
         .selectedItem = -1,
         .contentOffset = 0,
-        .empty = true
+        .empty = true,
+        .scrollIndicatorHeight = 0,
+        .scrollIndicatorOffset = 0,
+        .scrollIndicatorVisible = false
     };
     
     return listView;
@@ -45,6 +77,20 @@ void PGB_ListView_invalidateLayout(PGB_ListView *listView){
     }
     
     listView->contentSize = y;
+    
+    int scrollHeight = listView->frame.height - PGB_ListView_scrollInset * 2;
+    
+    bool indicatorVisible = false;
+    if(listView->contentSize > listView->frame.height){
+        indicatorVisible = true;
+    }
+    listView->scroll.indicatorVisible = indicatorVisible;
+    
+    float indicatorHeight = 0;
+    if(listView->contentSize > listView->frame.height && listView->frame.height != 0){
+        indicatorHeight = PGB_MAX(scrollHeight * (listView->frame.height / listView->contentSize), PGB_ListView_scrollIndicatorMinHeight);
+    }
+    listView->scroll.indicatorHeight = indicatorHeight;
 }
 
 void PGB_ListView_reload(PGB_ListView *listView){
@@ -55,13 +101,14 @@ void PGB_ListView_reload(PGB_ListView *listView){
     
     if(numberOfItems > 0){
         if(listView->selectedItem < 0){
-            PGB_ListView_selectItem(listView, 0);
+            PGB_ListView_selectItem(listView, 0, false);
         }
         else if(listView->selectedItem >= numberOfItems){
-            PGB_ListView_selectItem(listView, numberOfItems - 1);
+            PGB_ListView_selectItem(listView, numberOfItems - 1, false);
         }
     }
     else {
+        listView->scroll.active = false;
         listView->contentOffset = 0;
         listView->selectedItem = -1;
     }
@@ -72,27 +119,135 @@ void PGB_ListView_reload(PGB_ListView *listView){
 void PGB_ListView_update(PGB_ListView *listView){
     
     PDButtons pushed;
-    playdate->system->getButtonState(NULL, &pushed, NULL);
+    PDButtons pressed;
+    playdate->system->getButtonState(&pressed, &pushed, NULL);
     
     if(pushed & kButtonDown){
         int nextIndex = listView->selectedItem + 1;
         if(nextIndex >= 0 && nextIndex < listView->items->length){
-            PGB_ListView_selectItem(listView, nextIndex);
+            PGB_ListView_selectItem(listView, nextIndex, true);
         }
     }
     else if(pushed & kButtonUp){
         int prevIndex = listView->selectedItem - 1;
         if(prevIndex >= 0 && prevIndex < listView->items->length){
-            PGB_ListView_selectItem(listView, prevIndex);
+            PGB_ListView_selectItem(listView, prevIndex, true);
         }
     }
+    
+    listView->crankChange += PGB_App->crankChange;
+    
+    if(listView->crankChange != 0){
+        listView->crankResetTime += PGB_App->dt;
+    }
+    else {
+        listView->crankResetTime = 0;
+    }
+    
+    if(listView->crankChange > 0 && listView->crankChange >= PGB_ListView_crankMinChange){
+        int nextIndex = listView->selectedItem + 1;
+        if(nextIndex >= 0 && nextIndex < listView->items->length){
+            PGB_ListView_selectItem(listView, nextIndex, true);
+            listView->crankChange = 0;
+        }
+    }
+    else if(listView->crankChange < 0 && listView->crankChange <= (-PGB_ListView_crankMinChange)){
+        int prevIndex = listView->selectedItem - 1;
+        if(prevIndex >= 0 && prevIndex < listView->items->length){
+            PGB_ListView_selectItem(listView, prevIndex, true);
+            listView->crankChange = 0;
+        }
+    }
+    
+    if(listView->crankResetTime > PGB_ListView_crankResetMinTime){
+        listView->crankResetTime = 0;
+        listView->crankChange = 0;
+    }
+    
+    PGB_ListViewDirection old_direction = listView->direction;
+    listView->direction = PGB_ListViewDirectionNone;
+    
+    if(pressed & kButtonUp){
+        listView->direction = PGB_ListViewDirectionUp;
+    }
+    else if(pressed & kButtonDown){
+        listView->direction = PGB_ListViewDirectionDown;
+    }
+    
+    if(listView->direction == PGB_ListViewDirectionNone || listView->direction != old_direction){
+        listView->repeatIncrementTime = 0;
+        listView->repeatLevel = 0;
+        listView->repeatTime = 0;
+    }
+    else {
+        listView->repeatIncrementTime += PGB_App->dt;
+        
+        float repeatInterval = PGB_ListView_repeatInterval1;
+        if(listView->repeatLevel > 0){
+            repeatInterval = PGB_ListView_repeatInterval2;
+        }
+        
+        if(listView->repeatIncrementTime >= repeatInterval){
+            listView->repeatLevel = PGB_MIN(3, listView->repeatLevel + 1);
+            listView->repeatIncrementTime = fmodf(listView->repeatIncrementTime, repeatInterval);
+        }
+        
+        if(listView->repeatLevel > 0){
+            listView->repeatTime += PGB_App->dt;
+            
+            float repeatRate = 0.16;
+            
+            if(listView->repeatLevel == 2){
+                repeatRate = 0.1;
+            }
+            else if(listView->repeatLevel == 3){
+                repeatRate = 0.05;
+            }
+            
+            if(listView->repeatTime >= repeatRate){
+                listView->repeatTime = fmodf(listView->repeatTime, repeatRate);
+                
+                if(listView->direction == PGB_ListViewDirectionUp){
+                    int prevIndex = listView->selectedItem - 1;
+                    if(prevIndex >= 0 && prevIndex < listView->items->length){
+                        PGB_ListView_selectItem(listView, prevIndex, true);
+                    }
+                }
+                else if(listView->direction == PGB_ListViewDirectionDown){
+                    int nextIndex = listView->selectedItem + 1;
+                    if(nextIndex >= 0 && nextIndex < listView->items->length){
+                        PGB_ListView_selectItem(listView, nextIndex, true);
+                    }
+                }
+            }
+        }
+    }
+    
+    if(listView->scroll.active){
+        listView->scroll.time += PGB_App->dt;
+        
+        float progress = pgb_easeInOutQuad(fminf(1, listView->scroll.time / listView->scroll.duration));
+        listView->contentOffset = listView->scroll.start + (listView->scroll.end - listView->scroll.start) * progress;
+        
+        if(listView->scroll.time >= listView->scroll.duration){
+            listView->scroll.time = 0;
+            listView->scroll.active = false;
+        }
+    }
+        
+    float indicatorOffset = PGB_ListView_scrollInset;
+    if(listView->contentSize > listView->frame.height){
+        int scrollHeight = listView->frame.height - (PGB_ListView_scrollInset * 2 + listView->scroll.indicatorHeight);
+        indicatorOffset = PGB_ListView_scrollInset + (listView->contentOffset / (listView->contentSize - listView->frame.height)) * scrollHeight;
+    }
+    listView->scroll.indicatorOffset = indicatorOffset;
 }
 
 void PGB_ListView_draw(PGB_ListView *listView){
     
     bool needsDisplay = false;
     
-    if(listView->model.empty || listView->needsDisplay || listView->model.selectedItem != listView->selectedItem || listView->model.contentOffset != listView->contentOffset){
+    if(listView->model.empty || listView->needsDisplay || listView->model.selectedItem != listView->selectedItem || listView->model.contentOffset != listView->contentOffset || listView->model.scrollIndicatorVisible != listView->scroll.indicatorVisible || listView->model.scrollIndicatorOffset != listView->scroll.indicatorOffset || listView->scroll.indicatorHeight != listView->scroll.indicatorHeight){
         
         needsDisplay = true;
     }
@@ -102,7 +257,10 @@ void PGB_ListView_draw(PGB_ListView *listView){
     listView->model.empty = false;
     listView->model.selectedItem = listView->selectedItem;
     listView->model.contentOffset = listView->contentOffset;
-    
+    listView->model.scrollIndicatorVisible = listView->scroll.indicatorVisible;
+    listView->model.scrollIndicatorOffset = listView->scroll.indicatorOffset;
+    listView->model.scrollIndicatorHeight = listView->scroll.indicatorHeight;
+
     if(needsDisplay){
         
         int listX = listView->frame.x;
@@ -140,10 +298,20 @@ void PGB_ListView_draw(PGB_ListView *listView){
                 playdate->graphics->setDrawMode(kDrawModeCopy);
             }
         }
+        
+        if(listView->scroll.indicatorVisible){
+            int indicatorLineWidth = 1;
+
+            PDRect indicatorFillRect = PDRectMake(listView->frame.width - PGB_ListView_scrollInset - PGB_ListView_scrollIndicatorWidth, listView->scroll.indicatorOffset, PGB_ListView_scrollIndicatorWidth, listView->scroll.indicatorHeight);
+            PDRect indicatorBorderRect = PDRectMake(indicatorFillRect.x - indicatorLineWidth, indicatorFillRect.y - indicatorLineWidth, indicatorFillRect.width + indicatorLineWidth * 2, indicatorFillRect.height + indicatorLineWidth * 2);
+            
+            pgb_drawRoundRect(indicatorBorderRect, 2, indicatorLineWidth, kColorWhite);
+            pgb_fillRoundRect(indicatorFillRect, 2, kColorBlack);
+        }
     }
 }
 
-void PGB_ListView_selectItem(PGB_ListView *listView, unsigned int index){
+void PGB_ListView_selectItem(PGB_ListView *listView, unsigned int index, bool animated){
     
     PGB_ListItem *item = listView->items->items[index];
     
@@ -157,7 +325,17 @@ void PGB_ListView_selectItem(PGB_ListView *listView, unsigned int index){
         centeredOffset = PGB_MIN(centeredOffset, listView->contentSize - listHeight);
     }
     
-    listView->contentOffset = centeredOffset;
+    if(animated){
+        listView->scroll.active = true;
+        listView->scroll.start = listView->contentOffset;
+        listView->scroll.end = centeredOffset;
+        listView->scroll.time = 0;
+    }
+    else {
+        listView->scroll.active = false;
+        listView->contentOffset = centeredOffset;
+    }
+    
     listView->selectedItem = index;
 }
 

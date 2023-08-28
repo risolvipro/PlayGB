@@ -92,6 +92,39 @@ char* pgb_save_filename(const char *path, bool isRecovery){
     return buffer;
 }
 
+float pgb_easeInOutQuad(float x){
+    return (x < 0.5f) ? 2 * x * x : 1 - powf(-2 * x + 2, 2) * 0.5f;
+}
+
+void pgb_fillRoundRect(PDRect rect, int radius, LCDColor color) {
+    
+    int r2 = radius * 2;
+    
+    playdate->graphics->fillRect(rect.x, rect.y + radius, radius, rect.height - r2, color);
+    playdate->graphics->fillRect(rect.x + radius, rect.y, rect.width - r2, rect.height, color);
+    playdate->graphics->fillRect(rect.x + rect.width - radius, rect.y + radius, radius, rect.height - r2, color);
+    
+    playdate->graphics->fillEllipse(rect.x, rect.y, r2, r2, -90, 0, color);
+    playdate->graphics->fillEllipse(rect.x + rect.width - r2, rect.y, r2, r2, 0, 90, color);
+    playdate->graphics->fillEllipse(rect.x + rect.width - r2, rect.y + rect.height - r2, r2, r2, 90, 180, color);
+    playdate->graphics->fillEllipse(rect.x, rect.y + rect.height - r2, r2, r2, -180, -90, color);
+}
+
+void pgb_drawRoundRect(PDRect rect, int radius, int lineWidth, LCDColor color){
+    
+    int r2 = radius * 2;
+    
+    playdate->graphics->fillRect(rect.x, rect.y + radius, lineWidth, rect.height - r2, color);
+    playdate->graphics->fillRect(rect.x + radius, rect.y, rect.width - r2, lineWidth, color);
+    playdate->graphics->fillRect(rect.x + rect.width - lineWidth, rect.y + radius, lineWidth, rect.height - r2, color);
+    playdate->graphics->fillRect(rect.x + radius, rect.y + rect.height - lineWidth, rect.width - r2, lineWidth, color);
+
+    playdate->graphics->drawEllipse(rect.x, rect.y, r2, r2, lineWidth, -90, 0, color);
+    playdate->graphics->drawEllipse(rect.x + rect.width - r2, rect.y, r2, r2, lineWidth, 0, 90, color);
+    playdate->graphics->drawEllipse(rect.x + rect.width - r2, rect.y + rect.height - r2, r2, r2, lineWidth, 90, 180, color);
+    playdate->graphics->drawEllipse(rect.x, rect.y + rect.height - r2, r2, r2, lineWidth, -180, -90, color);
+}
+
 void* pgb_malloc(size_t size) {
     return playdate->system->realloc(NULL, size);
 }

@@ -17,6 +17,7 @@
 
 typedef struct PGB_Application {
     float dt;
+    float crankChange;
     PGB_Scene *scene;
     PGB_Scene *pendingScene;
     LCDFont *bodyFont;

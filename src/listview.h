@@ -16,12 +16,32 @@ typedef struct {
     bool empty;
     int contentOffset;
     int selectedItem;
+    bool scrollIndicatorVisible;
+    int scrollIndicatorOffset;
+    int scrollIndicatorHeight;
 } PGB_ListViewModel;
+
+typedef struct {
+    bool active;
+    int start;
+    int end;
+    float time;
+    float duration;
+    bool indicatorVisible;
+    float indicatorOffset;
+    float indicatorHeight;
+} PGB_ListViewScroll;
 
 typedef enum {
     PGB_ListViewItemTypeButton,
     PGB_ListViewItemTypeSwitch
 } PGB_ListItemType;
+
+typedef enum {
+    PGB_ListViewDirectionNone,
+    PGB_ListViewDirectionUp,
+    PGB_ListViewDirectionDown
+} PGB_ListViewDirection;
 
 typedef struct {
     PGB_ListItemType type;
@@ -39,8 +59,17 @@ typedef struct {
     PGB_Array *items;
     PGB_ListViewModel model;
     int selectedItem;
+    
     int contentOffset;
     int contentSize;
+    
+    PGB_ListViewScroll scroll;
+    PGB_ListViewDirection direction;
+    int repeatLevel;
+    float repeatIncrementTime;
+    float repeatTime;
+    float crankChange;
+    float crankResetTime;
     bool needsDisplay;
     PDRect frame;
 } PGB_ListView;
