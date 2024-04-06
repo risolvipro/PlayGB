@@ -35,6 +35,7 @@ extern const char *PGB_gamesPath;
 char* string_copy(const char *string);
 
 char* pgb_save_filename(const char *filename, bool isRecovery);
+char* pgb_extract_fs_error_code(const char *filename);
 
 float pgb_easeInOutQuad(float x);
 

@@ -34,7 +34,7 @@ void prefereces_init(void){
 
 void prefereces_read_from_disk(void){
     pref_file = playdate->file->open(pref_filename, kFileReadData);
-    if(pref_file != NULL){
+    if(pref_file){
         // read model version
         prefereces_read_uint32();
         
@@ -74,10 +74,8 @@ uint32_t prefereces_read_uint32(void){
 }
 
 void prefereces_write_uint32(uint32_t value){
-    
     unsigned char buffer[sizeof(uint32_t)];
     cpu_endian_to_big_endian((unsigned char*)&value, buffer, sizeof(uint32_t), 1);
-    
     playdate->file->write(pref_file, buffer, sizeof(uint32_t));
 }
 

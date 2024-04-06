@@ -589,7 +589,12 @@ void audio_init(void)
  */
 int audio_callback(void *context, int16_t *left, int16_t *right, int len)
 {
-    PGB_GameScene *gameScene = context;
+    PGB_GameScene **gameScene_ptr = context;
+    PGB_GameScene *gameScene = *gameScene_ptr;
+
+    if(!gameScene){
+        return 0;
+    }
     
     if(gameScene->audioLocked){
         return 0;

@@ -24,6 +24,9 @@ typedef struct PGB_Application {
     LCDFont *titleFont;
     LCDFont *subheadFont;
     LCDFont *labelFont;
+    LCDBitmapTable *selectorBitmapTable;
+    LCDBitmap *startSelectBitmap;
+    SoundSource *soundSource;
 } PGB_Application;
 
 extern PGB_Application *PGB_App;

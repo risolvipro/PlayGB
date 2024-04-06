@@ -12,6 +12,11 @@
 #include <math.h>
 #include "scene.h"
 
+typedef struct PGB_GameSceneContext PGB_GameSceneContext;
+typedef struct PGB_GameScene PGB_GameScene;
+
+extern PGB_GameScene *audioGameScene;
+
 typedef enum {
     PGB_GameSceneStateLoaded,
     PGB_GameSceneStateError
@@ -20,10 +25,9 @@ typedef enum {
 typedef enum {
     PGB_GameSceneErrorUndefined,
     PGB_GameSceneErrorLoadingRom,
+    PGB_GameSceneErrorWrongLocation,
     PGB_GameSceneErrorFatal
 } PGB_GameSceneError;
-
-typedef struct PGB_GameSceneContext PGB_GameSceneContext;
 
 typedef struct {
     PGB_GameSceneState state;
@@ -48,14 +52,12 @@ typedef struct {
     int numberOfFrames;
     float triggerAngle;
     float deadAngle;
-    LCDBitmapTable *bitmapTable;
-    LCDBitmap *startSelectBitmap;
     float index;
     bool startPressed;
     bool selectPressed;
 } PGB_CrankSelector;
 
-typedef struct {
+typedef struct PGB_GameScene {
     PGB_Scene *scene;
     char *save_filename;
     char *rom_filename;
@@ -70,8 +72,6 @@ typedef struct {
     PGB_GameSceneError error;
     
     PGB_CrankSelector selector;
-    
-    SoundSource *soundSource;
     
     #if PGB_DEBUG && PGB_DEBUG_UPDATED_ROWS
     PDRect debug_highlightFrame;

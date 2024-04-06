@@ -51,6 +51,7 @@ void PGB_LibraryScene_listFiles(const char *filename, void *userdata) {
     
     char *extension;
     char *dot = strrchr(filename, '.');
+    
     if(!dot || dot == filename){
         extension = "";
     }
@@ -238,15 +239,8 @@ PGB_Game* PGB_Game_new(const char *filename) {
     PGB_Game *game = pgb_malloc(sizeof(PGB_Game));
     game->filename = string_copy(filename);
     
-    char *dir_sep = "/";
-    
-    char *fullpath = pgb_malloc((strlen(PGB_gamesPath) + strlen(dir_sep) + strlen(filename) + 1) * sizeof(char));
-    
-    strcpy(fullpath, "");
-    strcat(fullpath, PGB_gamesPath);
-    strcat(fullpath, dir_sep);
-    strcat(fullpath, filename);
-    
+    char *fullpath;
+    playdate->system->formatString(&fullpath, "%s/%s", PGB_gamesPath, filename);
     game->fullpath = fullpath;
     
     return game;

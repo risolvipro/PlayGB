@@ -9,6 +9,7 @@
 #include "game_scene.h"
 #include "library_scene.h"
 #include "preferences.h"
+#include "minigb_apu.h"
 
 PGB_Application *PGB_App;
 
@@ -29,6 +30,12 @@ void PGB_init(void) {
     PGB_App->subheadFont = playdate->graphics->loadFont("fonts/Asheville-Sans-14-Bold", NULL);
     PGB_App->labelFont = playdate->graphics->loadFont("fonts/Nontendo-Bold", NULL);
     
+    PGB_App->selectorBitmapTable = playdate->graphics->loadBitmapTable("images/selector/selector", NULL);
+    PGB_App->startSelectBitmap = playdate->graphics->loadBitmap("images/selector-start-select", NULL);
+    
+    // add audio callback
+    PGB_App->soundSource = playdate->sound->addSource(audio_callback, &audioGameScene, 1);
+    
     // custom frame rate delimiter
     playdate->display->setRefreshRate(0);
     
@@ -41,15 +48,15 @@ void PGB_update(float dt) {
     PGB_App->dt = dt;
     PGB_App->crankChange = playdate->system->getCrankChange();
     
-    if(PGB_App->scene != NULL){
+    if(PGB_App->scene){
         void *managedObject = PGB_App->scene->managedObject;
         PGB_App->scene->update(managedObject);
     }
     
-    if(PGB_App->pendingScene != NULL){
+    if(PGB_App->pendingScene){
         // present pending scene
         
-        if(PGB_App->scene != NULL){
+        if(PGB_App->scene){
             prefereces_save_to_disk();
             
             void *managedObject = PGB_App->scene->managedObject;
@@ -70,7 +77,7 @@ void PGB_update(float dt) {
     float refreshRate = 30;
     float compensation = 0;
     
-    if(PGB_App->scene != NULL){
+    if(PGB_App->scene){
         refreshRate = PGB_App->scene->preferredRefreshRate;
         compensation = PGB_App->scene->refreshRateCompensation;
     }
@@ -92,10 +99,8 @@ void PGB_quit(void) {
     
     prefereces_save_to_disk();
     
-    if(PGB_App->scene != NULL){
+    if(PGB_App->scene){
         void *managedObject = PGB_App->scene->managedObject;
         PGB_App->scene->free(managedObject);
     }
-    
-    pgb_free(PGB_App);
 }

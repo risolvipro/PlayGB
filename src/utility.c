@@ -40,7 +40,7 @@ const uint8_t PGB_patterns[4][4][4] = {
 };
 
 char* string_copy(const char *string){
-    char *copied = pgb_malloc((strlen(string) + 1) * sizeof(char));
+    char *copied = pgb_malloc(strlen(string) + 1);
     strcpy(copied, string);
     return copied;
 }
@@ -67,29 +67,30 @@ char* pgb_save_filename(const char *path, bool isRecovery){
         len = strlen(filename) - strlen(dot);
     }
     
-    char *dir_sep = "/";
-    char *extension = ".sav";
+    char *filenameNoExt = pgb_malloc(len + 1);
+    strcpy(filenameNoExt, "");
+    strncat(filenameNoExt, filename, len);
     
-    char *recoverySuffix = " (recovery)";
-    
-    size_t recovery_len = 0;
+    char *suffix = "";
     if(isRecovery){
-        recovery_len = strlen(recoverySuffix);
+        suffix = " (recovery)";
     }
     
-    char *buffer = pgb_malloc((strlen(PGB_savesPath) + strlen(dir_sep) + len + recovery_len + strlen(extension) + 1) * sizeof(char));
+    char *buffer;
+    playdate->system->formatString(&buffer, "%s/%s%s.sav", PGB_savesPath, filenameNoExt, suffix);
     
-    strcpy(buffer, "");
-    
-    strcat(buffer, PGB_savesPath);
-    strcat(buffer, dir_sep);
-    strncat(buffer, filename, len);
-    if(isRecovery){
-        strcat(buffer, recoverySuffix);
-    }
-    strcat(buffer, extension);
+    pgb_free(filenameNoExt);
     
     return buffer;
+}
+
+char* pgb_extract_fs_error_code(const char *fileError){
+    char *findStr = "uC-FS error: ";
+    char *fsErrorPtr = strstr(fileError, findStr);
+    if(fsErrorPtr){
+        return fsErrorPtr + strlen(findStr);
+    }
+    return NULL;
 }
 
 float pgb_easeInOutQuad(float x){
