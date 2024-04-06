@@ -11,15 +11,19 @@ A Game Boy emulator for Playdate. PlayGB is based on [Peanut-GB](https://github.
 <a href="https://github.com/risolvipro/PlayGB/releases/latest"><img src="assets/playdate-badge-download.png?raw=true" width="200"></a>
 
 * Download the zip from the [latest release](https://github.com/risolvipro/PlayGB/releases/latest).
-* Copy the pdx through the [online sideload](https://play.date/account/sideload/) or USB.
-* Place the ROMs in `/Data/*.playgb/games/`. Filename must end with `.gb` or `.gbc`
-* To access Data folder, connect Playdate to a computer and  press `LEFT` + `MENU` + `LOCK` in the homescreen.
+* Copy the pdx through the [Web sideload](https://play.date/account/sideload/) or USB.
+* Launch the app.
+* Connect Playdate to a computer, press and hold `LEFT` + `MENU` + `LOCK` at the same time in the homescreen. Or go to Settings > System > Reboot to Data Disk.
+* Place the ROMs in the app data folder, the folder name depends on the sideload method.
+    * For Web sideload: `/Data/user.*.com.risolvipro.playgb/games/`
+    * For USB: `/Data/com.risolvipro.playgb/games/`
+* Filenames must end with `.gb` or `.gbc`
 
 ## Notes
 
 * Use the crank to press Start or Select.
-* To save a game you have to use the in-game save option. Game is automatically saved when changing ROMs or quitting the app. After a crash, a new `(recovery).sav` file is created. Save files are stored in `/Data/*.playgb/saves/`
-* Audio is disabled by default. You can optionally enable it from the ROMs list screen
+* To save a game you have to use the save option inside that game. A sav file is automatically created when changing ROMs or quitting the app. After a crash, a new `(recovery).sav` file is created. Save files are stored in `/Data/*.playgb/saves/`
+* Audio is disabled by default. You can optionally enable it from the library screen
 
 ## Implementation
 
