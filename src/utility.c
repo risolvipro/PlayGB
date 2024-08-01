@@ -39,31 +39,37 @@ const uint8_t PGB_patterns[4][4][4] = {
     }
 };
 
-char* string_copy(const char *string){
+char* string_copy(const char *string)
+{
     char *copied = pgb_malloc(strlen(string) + 1);
     strcpy(copied, string);
     return copied;
 }
 
-char* pgb_save_filename(const char *path, bool isRecovery){
+char* pgb_save_filename(const char *path, bool isRecovery)
+{
     
     char *filename;
     
     char *slash = strrchr(path, '/');
-    if(!slash){
+    if(!slash)
+    {
         filename = (char*)path;
     }
-    else {
+    else
+    {
         filename = slash + 1;
     }
     
     size_t len;
     
     char *dot = strrchr(filename, '.');
-    if(!dot || dot == filename){
+    if(!dot || dot == filename)
+    {
         len = strlen(filename);
     }
-    else {
+    else
+    {
         len = strlen(filename) - strlen(dot);
     }
     
@@ -72,7 +78,8 @@ char* pgb_save_filename(const char *path, bool isRecovery){
     strncat(filenameNoExt, filename, len);
     
     char *suffix = "";
-    if(isRecovery){
+    if(isRecovery)
+    {
         suffix = " (recovery)";
     }
     
@@ -84,21 +91,24 @@ char* pgb_save_filename(const char *path, bool isRecovery){
     return buffer;
 }
 
-char* pgb_extract_fs_error_code(const char *fileError){
+char* pgb_extract_fs_error_code(const char *fileError)
+{
     char *findStr = "uC-FS error: ";
     char *fsErrorPtr = strstr(fileError, findStr);
-    if(fsErrorPtr){
+    if(fsErrorPtr)
+    {
         return fsErrorPtr + strlen(findStr);
     }
     return NULL;
 }
 
-float pgb_easeInOutQuad(float x){
+float pgb_easeInOutQuad(float x)
+{
     return (x < 0.5f) ? 2 * x * x : 1 - powf(-2 * x + 2, 2) * 0.5f;
 }
 
-void pgb_fillRoundRect(PDRect rect, int radius, LCDColor color) {
-    
+void pgb_fillRoundRect(PDRect rect, int radius, LCDColor color)
+{
     int r2 = radius * 2;
     
     playdate->graphics->fillRect(rect.x, rect.y + radius, radius, rect.height - r2, color);
@@ -111,8 +121,8 @@ void pgb_fillRoundRect(PDRect rect, int radius, LCDColor color) {
     playdate->graphics->fillEllipse(rect.x, rect.y + rect.height - r2, r2, r2, -180, -90, color);
 }
 
-void pgb_drawRoundRect(PDRect rect, int radius, int lineWidth, LCDColor color){
-    
+void pgb_drawRoundRect(PDRect rect, int radius, int lineWidth, LCDColor color)
+{
     int r2 = radius * 2;
     
     playdate->graphics->fillRect(rect.x, rect.y + radius, lineWidth, rect.height - r2, color);
@@ -126,18 +136,24 @@ void pgb_drawRoundRect(PDRect rect, int radius, int lineWidth, LCDColor color){
     playdate->graphics->drawEllipse(rect.x, rect.y + rect.height - r2, r2, r2, lineWidth, -180, -90, color);
 }
 
-void* pgb_malloc(size_t size) {
+void* pgb_malloc(size_t size)
+{
     return playdate->system->realloc(NULL, size);
 }
 
-void* pgb_realloc(void *ptr, size_t size) {
+void* pgb_realloc(void *ptr, size_t size)
+{
     return playdate->system->realloc(ptr, size);
 }
 
-void* pgb_calloc(size_t count, size_t size) {
+void* pgb_calloc(size_t count, size_t size)
+{
     return memset(pgb_malloc(count * size), 0, count * size);
 }
 
-void pgb_free(void *ptr) {
-    playdate->system->realloc(ptr, 0);
+void pgb_free(void *ptr)
+{
+    if(ptr){
+        playdate->system->realloc(ptr, 0);
+    }
 }

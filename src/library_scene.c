@@ -18,8 +18,8 @@ static void PGB_LibraryScene_menu(void *object);
 static PDMenuItem *audioMenuItem;
 static PDMenuItem *fpsMenuItem;
 
-PGB_LibraryScene* PGB_LibraryScene_new(void) {
-    
+PGB_LibraryScene* PGB_LibraryScene_new(void)
+{
     PGB_Scene *scene = PGB_Scene_new();
     
     PGB_LibraryScene *libraryScene = pgb_malloc(sizeof(PGB_LibraryScene));
@@ -45,29 +45,32 @@ PGB_LibraryScene* PGB_LibraryScene_new(void) {
     return libraryScene;
 }
 
-void PGB_LibraryScene_listFiles(const char *filename, void *userdata) {
-    
+void PGB_LibraryScene_listFiles(const char *filename, void *userdata)
+{
     PGB_LibraryScene *libraryScene = userdata;
     
     char *extension;
     char *dot = strrchr(filename, '.');
     
-    if(!dot || dot == filename){
+    if(!dot || dot == filename)
+    {
         extension = "";
     }
     else {
         extension = dot + 1;
     }
     
-    if((strcmp(extension, "gb") == 0 || strcmp(extension, "gbc") == 0)){
+    if((strcmp(extension, "gb") == 0 || strcmp(extension, "gbc") == 0))
+    {
         PGB_Game *game = PGB_Game_new(filename);
         array_push(libraryScene->games, game);
     }
 }
 
-void PGB_LibraryScene_reloadList(PGB_LibraryScene *libraryScene) {
-    
-    for(int i = 0; i < libraryScene->games->length; i++){
+void PGB_LibraryScene_reloadList(PGB_LibraryScene *libraryScene)
+{
+    for(int i = 0; i < libraryScene->games->length; i++)
+    {
         PGB_Game *game = libraryScene->games->items[i];
         PGB_Game_free(game);
     }
@@ -78,21 +81,24 @@ void PGB_LibraryScene_reloadList(PGB_LibraryScene *libraryScene) {
     
     PGB_Array *items = libraryScene->listView->items;
     
-    for(int i = 0; i < items->length; i++){
+    for(int i = 0; i < items->length; i++)
+    {
         PGB_ListItem *item = items->items[i];
         PGB_ListItem_free(item);
     }
     
     array_clear(items);
     
-    for(int i = 0; i < libraryScene->games->length; i++){
+    for(int i = 0; i < libraryScene->games->length; i++)
+    {
         PGB_Game *game = libraryScene->games->items[i];
         
         PGB_ListItemButton *itemButton = PGB_ListItemButton_new(game->filename);
         array_push(items, itemButton->item);
     }
     
-    if(items->length > 0){
+    if(items->length > 0)
+    {
         libraryScene->tab = PGB_LibrarySceneTabList;
     }
     else {
@@ -102,13 +108,14 @@ void PGB_LibraryScene_reloadList(PGB_LibraryScene *libraryScene) {
     PGB_ListView_reload(libraryScene->listView);
 }
 
-void PGB_LibraryScene_update(void *object) {
-    
+void PGB_LibraryScene_update(void *object)
+{
     PGB_LibraryScene *libraryScene = object;
     
     PGB_Scene_update(libraryScene->scene);
     
-    if(!libraryScene->firstLoad){
+    if(!libraryScene->firstLoad)
+    {
         libraryScene->firstLoad = true;
         PGB_LibraryScene_reloadList(libraryScene);
     }
@@ -116,7 +123,8 @@ void PGB_LibraryScene_update(void *object) {
     PDButtons released;
     playdate->system->getButtonState(NULL, NULL, &released);
 
-    if(released & kButtonA){
+    if(released & kButtonA)
+    {
         int selectedItem = libraryScene->listView->selectedItem;
         if(selectedItem >= 0 && selectedItem < libraryScene->listView->items->length){
             
@@ -129,29 +137,31 @@ void PGB_LibraryScene_update(void *object) {
     
     bool needsDisplay = false;
     
-    if(libraryScene->model.empty || libraryScene->model.tab != libraryScene->tab){
+    if(libraryScene->model.empty || libraryScene->model.tab != libraryScene->tab)
+    {
         needsDisplay = true;
     }
     
     libraryScene->model.empty = false;
     libraryScene->model.tab = libraryScene->tab;
     
-    if(needsDisplay){
+    if(needsDisplay)
+    {
         playdate->graphics->clear(kColorWhite);
     }
     
-    if(libraryScene->tab == PGB_LibrarySceneTabList){
-        
+    if(libraryScene->tab == PGB_LibrarySceneTabList)
+    {
         libraryScene->listView->needsDisplay = needsDisplay;
         libraryScene->listView->frame = PDRectMake(0, 0, playdate->display->getWidth(), playdate->display->getHeight());
         
         PGB_ListView_update(libraryScene->listView);
         PGB_ListView_draw(libraryScene->listView);
     }
-    else if(libraryScene->tab == PGB_LibrarySceneTabEmpty){
-        
-        if(needsDisplay){
-            
+    else if(libraryScene->tab == PGB_LibrarySceneTabEmpty)
+    {
+        if(needsDisplay)
+        {
             static const char *title = "PlayGB";
             static const char *message1 = "Connect to a computer and";
             static const char *message2 = "copy games to Data/*.playgb/games";
@@ -184,24 +194,24 @@ void PGB_LibraryScene_update(void *object) {
     }
 }
 
-void PGB_LibraryScene_didSelectRefresh(void *userdata){
-    
+void PGB_LibraryScene_didSelectRefresh(void *userdata)
+{
     PGB_LibraryScene *libraryScene = userdata;
     PGB_LibraryScene_reloadList(libraryScene);
 }
 
-void PGB_LibraryScene_didChangeSound(void *userdata){
-    
+void PGB_LibraryScene_didChangeSound(void *userdata)
+{
     preferences_sound_enabled = playdate->system->getMenuItemValue(audioMenuItem);
 }
 
-void PGB_LibraryScene_didChangeFPS(void *userdata){
-    
+void PGB_LibraryScene_didChangeFPS(void *userdata)
+{
     preferences_display_fps = playdate->system->getMenuItemValue(fpsMenuItem);
 }
 
-void PGB_LibraryScene_menu(void *object) {
-    
+void PGB_LibraryScene_menu(void *object)
+{
     PGB_LibraryScene *libraryScene = object;
     
     // playdate->system->addMenuItem("Refresh", PGB_LibraryScene_didSelectRefresh, libraryScene);
@@ -210,20 +220,22 @@ void PGB_LibraryScene_menu(void *object) {
     fpsMenuItem = playdate->system->addCheckmarkMenuItem("Show FPS", preferences_display_fps, PGB_LibraryScene_didChangeFPS, libraryScene);
 }
 
-void PGB_LibraryScene_free(void *object) {
-    
+void PGB_LibraryScene_free(void *object)
+{
     PGB_LibraryScene *libraryScene = object;
     
     PGB_Scene_free(libraryScene->scene);
     
-    for(int i = 0; i < libraryScene->games->length; i++){
+    for(int i = 0; i < libraryScene->games->length; i++)
+    {
         PGB_Game *game = libraryScene->games->items[i];
         PGB_Game_free(game);
     }
     
     PGB_Array *items = libraryScene->listView->items;
     
-    for(int i = 0; i < items->length; i++){
+    for(int i = 0; i < items->length; i++)
+    {
         PGB_ListItem *item = items->items[i];
         PGB_ListItem_free(item);
     }
@@ -235,7 +247,8 @@ void PGB_LibraryScene_free(void *object) {
     pgb_free(libraryScene);
 }
 
-PGB_Game* PGB_Game_new(const char *filename) {
+PGB_Game* PGB_Game_new(const char *filename)
+{
     PGB_Game *game = pgb_malloc(sizeof(PGB_Game));
     game->filename = string_copy(filename);
     
@@ -246,8 +259,8 @@ PGB_Game* PGB_Game_new(const char *filename) {
     return game;
 }
 
-void PGB_Game_free(PGB_Game *game) {
-    
+void PGB_Game_free(PGB_Game *game)
+{
     pgb_free(game->filename);
     pgb_free(game->fullpath);
     

@@ -17,23 +17,26 @@
 
 static int update(void* userdata);
 
-DllExport int eventHandler(PlaydateAPI *pd, PDSystemEvent event, uint32_t arg) {
-    
-    if(event == kEventInit){
+DllExport int eventHandler(PlaydateAPI *pd, PDSystemEvent event, uint32_t arg)
+{
+    if(event == kEventInit)
+    {
         playdate = pd;
         
         PGB_init();
         
         pd->system->setUpdateCallback(update, pd);
     }
-    else if (event == kEventTerminate){
+    else if (event == kEventTerminate)
+    {
         PGB_quit();
     }
     
     return 0;
 }
 
-int update(void* userdata) {
+int update(void* userdata)
+{
     PlaydateAPI *pd = userdata;
     
     float dt = pd->system->getElapsedTime();

@@ -13,8 +13,8 @@
 
 PGB_Application *PGB_App;
 
-void PGB_init(void) {
-    
+void PGB_init(void)
+{
     PGB_App = pgb_malloc(sizeof(PGB_Application));
     
     PGB_App->scene = NULL;
@@ -43,20 +43,23 @@ void PGB_init(void) {
     PGB_present(libraryScene->scene);
 }
 
-void PGB_update(float dt) {
-    
+void PGB_update(float dt)
+{
     PGB_App->dt = dt;
     PGB_App->crankChange = playdate->system->getCrankChange();
     
-    if(PGB_App->scene){
+    if(PGB_App->scene)
+    {
         void *managedObject = PGB_App->scene->managedObject;
         PGB_App->scene->update(managedObject);
     }
     
-    if(PGB_App->pendingScene){
+    if(PGB_App->pendingScene)
+    {
         // present pending scene
         
-        if(PGB_App->scene){
+        if(PGB_App->scene)
+        {
             prefereces_save_to_disk();
             
             void *managedObject = PGB_App->scene->managedObject;
@@ -77,12 +80,14 @@ void PGB_update(float dt) {
     float refreshRate = 30;
     float compensation = 0;
     
-    if(PGB_App->scene){
+    if(PGB_App->scene)
+    {
         refreshRate = PGB_App->scene->preferredRefreshRate;
         compensation = PGB_App->scene->refreshRateCompensation;
     }
     
-    if(refreshRate > 0){
+    if(refreshRate > 0)
+    {
         float refreshInterval = 1.0f / refreshRate + compensation;
         while(playdate->system->getElapsedTime() < refreshInterval);
     }
@@ -90,16 +95,17 @@ void PGB_update(float dt) {
     #endif
 }
 
-void PGB_present(PGB_Scene *scene) {
-    
+void PGB_present(PGB_Scene *scene)
+{
     PGB_App->pendingScene = scene;
 }
 
-void PGB_quit(void) {
-    
+void PGB_quit(void)
+{
     prefereces_save_to_disk();
     
-    if(PGB_App->scene){
+    if(PGB_App->scene)
+    {
         void *managedObject = PGB_App->scene->managedObject;
         PGB_App->scene->free(managedObject);
     }

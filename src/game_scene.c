@@ -42,8 +42,8 @@ static const char *selectButtonText = "select";
 static uint8_t PGB_GameScene_bitmask[256][4][4];
 static bool PGB_GameScene_bitmask_done = false;
 
-PGB_GameScene* PGB_GameScene_new(const char *rom_filename){
-    
+PGB_GameScene* PGB_GameScene_new(const char *rom_filename)
+{
     PGB_Scene *scene = PGB_Scene_new();
     
     PGB_GameScene *gameScene = pgb_malloc(sizeof(PGB_GameScene));
@@ -94,12 +94,14 @@ PGB_GameScene* PGB_GameScene_new(const char *rom_filename){
     
     PGB_GameSceneError romError;
     uint8_t *rom = read_rom_to_ram(rom_filename, &romError);
-    if(rom){
+    if(rom)
+    {
         context->rom = rom;
         
         enum gb_init_error_e gb_ret = gb_init(&context->gb, rom, gb_error, NULL);
         
-        if(gb_ret == GB_INIT_NO_ERROR){
+        if(gb_ret == GB_INIT_NO_ERROR)
+        {
             char *save_filename = pgb_save_filename(rom_filename, false);
             gameScene->save_filename = save_filename;
             
@@ -107,7 +109,8 @@ PGB_GameScene* PGB_GameScene_new(const char *rom_filename){
             
             context->gb.gb_cart_ram = context->cart_ram;
             
-            if(gameScene->audioEnabled){
+            if(gameScene->audioEnabled)
+            {
                 // init audio
                 playdate->sound->channel->setVolume(playdate->sound->getDefaultChannel(), 0.2f);
                 
@@ -125,14 +128,16 @@ PGB_GameScene* PGB_GameScene_new(const char *rom_filename){
             // set game state to loaded
             gameScene->state = PGB_GameSceneStateLoaded;
         }
-        else {
+        else
+        {
             gameScene->state = PGB_GameSceneStateError;
             gameScene->error = PGB_GameSceneErrorFatal;
             
             playdate->system->logToConsole("%s:%i: Error initializing gb context", __FILE__, __LINE__);
         }
     }
-    else {
+    else
+    {
         gameScene->state = PGB_GameSceneStateError;
         gameScene->error = romError;
     }
@@ -140,8 +145,8 @@ PGB_GameScene* PGB_GameScene_new(const char *rom_filename){
     return gameScene;
 }
 
-void PGB_GameScene_selector_init(PGB_GameScene *gameScene){
-    
+void PGB_GameScene_selector_init(PGB_GameScene *gameScene)
+{
     int startButtonWidth = playdate->graphics->getTextWidth(PGB_App->labelFont, startButtonText, strlen(startButtonText), kUTF8Encoding, 0);
     int selectButtonWidth = playdate->graphics->getTextWidth(PGB_App->labelFont, selectButtonText, strlen(selectButtonText), kUTF8Encoding, 0);
     
@@ -194,22 +199,27 @@ void PGB_GameScene_selector_init(PGB_GameScene *gameScene){
 /**
  * Returns a pointer to the allocated space containing the ROM. Must be freed.
  */
-uint8_t *read_rom_to_ram(const char *filename, PGB_GameSceneError *sceneError) {
+uint8_t *read_rom_to_ram(const char *filename, PGB_GameSceneError *sceneError)
+{
     *sceneError = PGB_GameSceneErrorUndefined;
     
     SDFile *rom_file = playdate->file->open(filename, kFileReadData);
     
-    if(rom_file == NULL){
+    if(rom_file == NULL)
+    {
         const char *fileError = playdate->file->geterr();
         playdate->system->logToConsole("%s:%i: Can't open rom file %s", __FILE__, __LINE__, filename);
         playdate->system->logToConsole("%s:%i: File error %s", __FILE__, __LINE__, fileError);
         
         *sceneError = PGB_GameSceneErrorLoadingRom;
         
-        if(fileError){
+        if(fileError)
+        {
             char *fsErrorCode = pgb_extract_fs_error_code(fileError);
-            if(fsErrorCode){
-                if(strcmp(fsErrorCode, "0709") == 0){
+            if(fsErrorCode)
+            {
+                if(strcmp(fsErrorCode, "0709") == 0)
+                {
                     *sceneError = PGB_GameSceneErrorWrongLocation;
                 }
             }
@@ -223,7 +233,8 @@ uint8_t *read_rom_to_ram(const char *filename, PGB_GameSceneError *sceneError) {
     
     uint8_t *rom = pgb_malloc(rom_size);
     
-    if(playdate->file->read(rom_file, rom, rom_size) != rom_size){
+    if(playdate->file->read(rom_file, rom, rom_size) != rom_size)
+    {
         playdate->system->logToConsole("%s:%i: Can't read rom file %s", __FILE__, __LINE__, filename);
         
         pgb_free(rom);
@@ -239,13 +250,15 @@ uint8_t *read_rom_to_ram(const char *filename, PGB_GameSceneError *sceneError) {
 void read_cart_ram_file(const char *save_filename, uint8_t **dest, const size_t len){
 
     /* If save file not required. */
-    if(len == 0) {
+    if(len == 0)
+    {
         *dest = NULL;
         return;
     }
 
     /* Allocate enough memory to hold save file. */
-    if((*dest = pgb_malloc(len)) == NULL){
+    if((*dest = pgb_malloc(len)) == NULL)
+    {
         playdate->system->logToConsole("%s:%i: Error allocating save file %s", __FILE__, __LINE__, save_filename);
     }
 
@@ -253,7 +266,8 @@ void read_cart_ram_file(const char *save_filename, uint8_t **dest, const size_t 
 
     /* It doesn't matter if the save file doesn't exist. We initialise the
      * save memory allocated above. The save file will be created on exit. */
-    if(f == NULL){
+    if(f == NULL)
+    {
         memset(*dest, 0, len);
         return;
     }
@@ -263,15 +277,17 @@ void read_cart_ram_file(const char *save_filename, uint8_t **dest, const size_t 
     playdate->file->close(f);
 }
 
-void write_cart_ram_file(const char *save_filename, uint8_t **dest, const size_t len){
-
-    if(len == 0 || *dest == NULL){
+void write_cart_ram_file(const char *save_filename, uint8_t **dest, const size_t len)
+{
+    if(len == 0 || *dest == NULL)
+    {
         return;
     }
     
     SDFile *f = playdate->file->open(save_filename, kFileWrite);
     
-    if(f == NULL){
+    if(f == NULL)
+    {
         playdate->system->logToConsole("%s:%i: Can't write save file", __FILE__, __LINE__, save_filename);
         return;
     }
@@ -285,28 +301,30 @@ void write_cart_ram_file(const char *save_filename, uint8_t **dest, const size_t
  * Handles an error reported by the emulator. The emulator context may be used
  * to better understand why the error given in gb_err was reported.
  */
-void gb_error(struct gb_s *gb, const enum gb_error_e gb_err, const uint16_t val) {
-    
+void gb_error(struct gb_s *gb, const enum gb_error_e gb_err, const uint16_t val)
+{
     PGB_GameSceneContext *context = gb->direct.priv;
     
     bool is_fatal = false;
     
-    if(gb_err == GB_INVALID_OPCODE){
+    if(gb_err == GB_INVALID_OPCODE)
+    {
         is_fatal = true;
         
         playdate->system->logToConsole("%s:%i: Invalid opcode %#04x at PC: %#06x, SP: %#06x", __FILE__, __LINE__, val, gb->cpu_reg.pc - 1, gb->cpu_reg.sp);
     }
-    else if(gb_err == GB_INVALID_READ || gb_err == GB_INVALID_WRITE){
-        
+    else if(gb_err == GB_INVALID_READ || gb_err == GB_INVALID_WRITE)
+    {
         playdate->system->logToConsole("%s:%i: Invalid read / write", __FILE__, __LINE__);
     }
-    else {
+    else
+    {
         is_fatal = true;
-        
         playdate->system->logToConsole("%s:%i: Unknown error occurred", __FILE__, __LINE__);
     }
     
-    if(is_fatal){
+    if(is_fatal)
+    {
         // write recovery .sav
         char *recovery_filename = pgb_save_filename(context->scene->rom_filename, true);
         write_cart_ram_file(recovery_filename, &context->gb.gb_cart_ram, gb_get_save_size(gb));
@@ -322,8 +340,8 @@ void gb_error(struct gb_s *gb, const enum gb_error_e gb_err, const uint16_t val)
     return;
 }
 
-void PGB_GameScene_update(void *object){
-    
+void PGB_GameScene_update(void *object)
+{
     PGB_GameScene *gameScene = object;
     
     PGB_Scene_update(gameScene->scene);
@@ -333,19 +351,24 @@ void PGB_GameScene_update(void *object){
     gameScene->selector.startPressed = false;
     gameScene->selector.selectPressed = false;
     
-    if(!playdate->system->isCrankDocked()){
+    if(!playdate->system->isCrankDocked())
+    {
         float angle = fmaxf(0, fminf(360, playdate->system->getCrankAngle()));
         
-        if(angle <= (180 - gameScene->selector.deadAngle)){
-            if(angle >= gameScene->selector.triggerAngle){
+        if(angle <= (180 - gameScene->selector.deadAngle))
+        {
+            if(angle >= gameScene->selector.triggerAngle)
+            {
                 gameScene->selector.startPressed = true;
             }
             
             float adjustedAngle = fminf(angle, gameScene->selector.triggerAngle);
             progress = 0.5f - adjustedAngle / gameScene->selector.triggerAngle * 0.5f;
         }
-        else if(angle >= (180 + gameScene->selector.deadAngle)){
-            if(angle <= (360 - gameScene->selector.triggerAngle)){
+        else if(angle >= (180 + gameScene->selector.deadAngle))
+        {
+            if(angle <= (360 - gameScene->selector.triggerAngle))
+            {
                 gameScene->selector.selectPressed = true;
             }
             
@@ -360,16 +383,19 @@ void PGB_GameScene_update(void *object){
     
     int selectorIndex;
     
-    if(gameScene->selector.startPressed && gameScene->selector.selectPressed){
+    if(gameScene->selector.startPressed && gameScene->selector.selectPressed)
+    {
         selectorIndex = -1;
     }
     else {
         selectorIndex = 1 + roundf(progress * (gameScene->selector.numberOfFrames - 2));
         
-        if(progress == 0){
+        if(progress == 0)
+        {
             selectorIndex = 0;
         }
-        else if(progress == 1){
+        else if(progress == 1)
+        {
             selectorIndex = gameScene->selector.numberOfFrames - 1;
         }
     }
@@ -378,12 +404,14 @@ void PGB_GameScene_update(void *object){
     
     bool needsDisplay = false;
     
-    if(gameScene->model.empty || gameScene->needsDisplay || gameScene->model.state != gameScene->state || gameScene->model.error != gameScene->error){
+    if(gameScene->model.empty || gameScene->needsDisplay || gameScene->model.state != gameScene->state || gameScene->model.error != gameScene->error)
+    {
         needsDisplay = true;
     }
     
     bool needsDisplaySelector = false;
-    if(needsDisplay || gameScene->model.selectorIndex != gameScene->selector.index){
+    if(needsDisplay || gameScene->model.selectorIndex != gameScene->selector.index)
+    {
         needsDisplaySelector = true;
     }
 
@@ -393,8 +421,8 @@ void PGB_GameScene_update(void *object){
     gameScene->model.selectorIndex = gameScene->selector.index;
     gameScene->needsDisplay = false;
     
-    if(gameScene->state == PGB_GameSceneStateLoaded){
-        
+    if(gameScene->state == PGB_GameSceneStateLoaded)
+    {
         PGB_GameSceneContext *context = gameScene->context;
                 
         PDButtons current;
@@ -410,7 +438,8 @@ void PGB_GameScene_update(void *object){
         context->gb.direct.joypad_bits.right = !(current & kButtonRight);
         context->gb.direct.joypad_bits.down = !(current & kButtonDown);
         
-        if(needsDisplay){
+        if(needsDisplay)
+        {
             playdate->graphics->clear(kColorBlack);
         }
         
@@ -425,8 +454,8 @@ void PGB_GameScene_update(void *object){
         gameScene->scene->preferredRefreshRate = gb_draw ? 60 : 0;
         gameScene->scene->refreshRateCompensation = gb_draw ? (1.0f / 60 - PGB_App->dt) : 0;
         
-        if(gb_draw){
-            
+        if(gb_draw)
+        {
             uint8_t *framebuffer = playdate->graphics->getFrame();
             
             int skip_counter = 0;
@@ -441,16 +470,19 @@ void PGB_GameScene_update(void *object){
             int y_offset;
             int next_y_offset = 2;
             
-            for(int y = 0; y < (LCD_HEIGHT - 1); y++){
+            for(int y = 0; y < (LCD_HEIGHT - 1); y++)
+            {
                 y_offset = next_y_offset;
                 
-                if(skip_counter == 5){
+                if(skip_counter == 5)
+                {
                     y_offset = 1;
                     next_y_offset = 1;
                     skip_counter = 0;
                     single_line = true;
                 }
-                else if(single_line){
+                else if(single_line)
+                {
                     next_y_offset = 2;
                     single_line = false;
                 }
@@ -458,17 +490,19 @@ void PGB_GameScene_update(void *object){
                 uint8_t *pixels;
                 uint8_t *old_pixels;
                 
-                if(context->gb.display.back_fb_enabled){
+                if(context->gb.display.back_fb_enabled)
+                {
                     pixels = gb_front_fb[y];
                     old_pixels = gb_back_fb[y];
                 }
-                else {
+                else
+                {
                     pixels = gb_back_fb[y];
                     old_pixels = gb_front_fb[y];
                 }
                 
-                if(memcmp(pixels, old_pixels, LCD_WIDTH) != 0){
-                    
+                if(memcmp(pixels, old_pixels, LCD_WIDTH) != 0)
+                {
                     int d_row1 = y2 & 3;
                     int d_row2 = (y2 + 1) & 3;
                     
@@ -476,23 +510,27 @@ void PGB_GameScene_update(void *object){
                     int fb_index2 = lcd_rows + row_offset;
                     
                     memset(&framebuffer[fb_index1], 0x00, PGB_LCD_ROWSIZE);
-                    if(y_offset == 2){
+                    if(y_offset == 2)
+                    {
                         memset(&framebuffer[fb_index2], 0x00, PGB_LCD_ROWSIZE);
                     }
                     
                     uint8_t bit = 0;
                     
-                    for(int x = 0; x < LCD_WIDTH; x++){
+                    for(int x = 0; x < LCD_WIDTH; x++)
+                    {
                         uint8_t pixel = pixels[x];
                         
                         framebuffer[fb_index1] |= PGB_GameScene_bitmask[pixel][bit][d_row1];
-                        if(y_offset == 2){
+                        if(y_offset == 2)
+                        {
                             framebuffer[fb_index2] |= PGB_GameScene_bitmask[pixel][bit][d_row2];
                         }
                         
                         bit++;
                         
-                        if(bit == 4){
+                        if(bit == 4)
+                        {
                             bit = 0;
                             fb_index1++;
                             fb_index2++;
@@ -511,7 +549,8 @@ void PGB_GameScene_update(void *object){
                 y2 += y_offset;
                 lcd_rows += (y_offset == 1) ? row_offset : row_offset2;
                 
-                if(!single_line){
+                if(!single_line)
+                {
                     skip_counter++;
                 }
             }
@@ -519,12 +558,14 @@ void PGB_GameScene_update(void *object){
         
         gameScene->rtc_timer += PGB_App->dt;
         
-        if(gameScene->rtc_timer >= 1){
+        if(gameScene->rtc_timer >= 1)
+        {
             gameScene->rtc_timer = gameScene->rtc_timer - 1;
             gb_tick_rtc(&context->gb);
         }
 
-        if(needsDisplay){
+        if(needsDisplay)
+        {
             playdate->graphics->setFont(PGB_App->labelFont);
             playdate->graphics->setDrawMode(kDrawModeFillWhite);
             
@@ -534,13 +575,16 @@ void PGB_GameScene_update(void *object){
             playdate->graphics->setDrawMode(kDrawModeCopy);
         }
         
-        if(needsDisplaySelector){
+        if(needsDisplaySelector)
+        {
             LCDBitmap *bitmap;
             
-            if(selectorIndex < 0){
+            if(selectorIndex < 0)
+            {
                 bitmap = PGB_App->startSelectBitmap;
             }
-            else {
+            else
+            {
                 bitmap = playdate->graphics->getTableBitmap(PGB_App->selectorBitmapTable, selectorIndex);
             }
             
@@ -551,25 +595,29 @@ void PGB_GameScene_update(void *object){
         PDRect highlightFrame = gameScene->debug_highlightFrame;
         playdate->graphics->fillRect(highlightFrame.x, highlightFrame.y, highlightFrame.width, highlightFrame.height, kColorBlack);
         
-        for(int y = 0; y < PGB_LCD_HEIGHT; y++){
+        for(int y = 0; y < PGB_LCD_HEIGHT; y++)
+        {
             int absoluteY = PGB_LCD_Y + y;
             
-            if(gameScene->debug_updatedRows[absoluteY]){
+            if(gameScene->debug_updatedRows[absoluteY])
+            {
                 playdate->graphics->fillRect(highlightFrame.x, absoluteY, highlightFrame.width, 1, kColorWhite);
             }
         }
         #endif
         
-        if(preferences_display_fps){
+        if(preferences_display_fps)
+        {
             playdate->system->drawFPS(0, 0);
         }
     }
-    else if(gameScene->state == PGB_GameSceneStateError){
-        
+    else if(gameScene->state == PGB_GameSceneStateError)
+    {
         gameScene->scene->preferredRefreshRate = 30;
         gameScene->scene->refreshRateCompensation = 0;
         
-        if(needsDisplay){
+        if(needsDisplay)
+        {
             char *errorTitle = "Oh no!";
             
             int errorMessagesCount = 1;
@@ -577,16 +625,19 @@ void PGB_GameScene_update(void *object){
             
             errorMessages[0] = "A generic error occurred";
             
-            if(gameScene->error == PGB_GameSceneErrorLoadingRom){
+            if(gameScene->error == PGB_GameSceneErrorLoadingRom)
+            {
                 errorMessages[0] = "Can't load the selected ROM";
             }
-            else if(gameScene->error == PGB_GameSceneErrorWrongLocation){
+            else if(gameScene->error == PGB_GameSceneErrorWrongLocation)
+            {
                 errorTitle = "Wrong location";
                 errorMessagesCount = 2;
                 errorMessages[0] = "Please move the ROM to";
                 errorMessages[1] = "/Data/*.playgb/games/";
             }
-            else if(gameScene->error == PGB_GameSceneErrorFatal){
+            else if(gameScene->error == PGB_GameSceneErrorFatal)
+            {
                 errorMessages[0] = "A fatal error occurred";
             }
             
@@ -609,7 +660,8 @@ void PGB_GameScene_update(void *object){
             
             int messageY = titleY + titleHeight + titleToMessageSpacing;
             
-            for(int i = 0; i < errorMessagesCount; i++){
+            for(int i = 0; i < errorMessagesCount; i++)
+            {
                 char *errorMessage = errorMessages[i];
                 int messageX = (float)(playdate->display->getWidth() - playdate->graphics->getTextWidth(PGB_App->bodyFont, errorMessage, strlen(errorMessage), kUTF8Encoding, 0)) / 2;
                 
@@ -622,8 +674,8 @@ void PGB_GameScene_update(void *object){
     }
 }
 
-void PGB_GameScene_didSelectSave(void *userdata) {
-    
+void PGB_GameScene_didSelectSave(void *userdata)
+{
     PGB_GameScene *gameScene = userdata;
     
     gameScene->audioLocked = true;
@@ -633,8 +685,8 @@ void PGB_GameScene_didSelectSave(void *userdata) {
     gameScene->audioLocked = false;
 }
 
-void PGB_GameScene_didSelectLibrary(void *userdata) {
-    
+void PGB_GameScene_didSelectLibrary(void *userdata)
+{
     PGB_GameScene *gameScene = userdata;
     
     gameScene->audioLocked = true;
@@ -643,56 +695,62 @@ void PGB_GameScene_didSelectLibrary(void *userdata) {
     PGB_present(libraryScene->scene);
 }
 
-void PGB_GameScene_refreshMenu(PGB_GameScene *gameScene) {
-    
+void PGB_GameScene_refreshMenu(PGB_GameScene *gameScene)
+{
     playdate->system->removeAllMenuItems();
 
     playdate->system->addMenuItem("Library", PGB_GameScene_didSelectLibrary, gameScene);
     
-    if(gameScene->state == PGB_GameSceneStateLoaded){
+    if(gameScene->state == PGB_GameSceneStateLoaded)
+    {
         playdate->system->addMenuItem("Save", PGB_GameScene_didSelectSave, gameScene);
     }
 }
 
-void PGB_GameScene_menu(void *object) {
-    
+void PGB_GameScene_menu(void *object)
+{
     PGB_GameScene *gameScene = object;
     
     PGB_GameScene_refreshMenu(gameScene);
 }
 
-void PGB_GameScene_saveGame(PGB_GameScene *gameScene) {
-    
-    if(gameScene->state == PGB_GameSceneStateLoaded){
+void PGB_GameScene_saveGame(PGB_GameScene *gameScene)
+{
+    if(gameScene->state == PGB_GameSceneStateLoaded)
+    {
         PGB_GameSceneContext *context = gameScene->context;
         
-        if(gameScene->save_filename){
+        if(gameScene->save_filename)
+        {
             write_cart_ram_file(gameScene->save_filename, &context->gb.gb_cart_ram, gb_get_save_size(&context->gb));
         }
     }
 }
 
-void PGB_GameScene_generateBitmask(void){
-    
-    if(PGB_GameScene_bitmask_done){
+void PGB_GameScene_generateBitmask(void)
+{
+    if(PGB_GameScene_bitmask_done)
+    {
         return;
     }
     
     PGB_GameScene_bitmask_done = true;
     
-    for(int c = 0; c < 256; c++){
+    for(int c = 0; c < 256; c++)
+    {
         int palette = c & 3;
         
-        for(int y = 0; y < 4; y++){
-            
+        for(int y = 0; y < 4; y++)
+        {
             int x_offset = 0;
             
-            for(int i = 0; i < 4; i++){
-                
+            for(int i = 0; i < 4; i++)
+            {
                 int mask = 0x00;
                 
                 for(int x = 0; x < 2; x++){
-                    if(PGB_patterns[palette][y][x_offset + x] == 1){
+                    if(PGB_patterns[palette][y][x_offset + x] == 1)
+                    {
                         int n = i * 2 + x;
                         mask |= (1 << (7 - n));
                     }
@@ -702,7 +760,8 @@ void PGB_GameScene_generateBitmask(void){
                 
                 x_offset += 2;
                 
-                if(x_offset == 4){
+                if(x_offset == 4)
+                {
                     x_offset = 0;
                 }
             }
@@ -710,8 +769,8 @@ void PGB_GameScene_generateBitmask(void){
     }
 }
 
-void PGB_GameScene_free(void *object){
-        
+void PGB_GameScene_free(void *object)
+{
     PGB_GameScene *gameScene = object;
     PGB_GameSceneContext *context = gameScene->context;
     
@@ -725,15 +784,18 @@ void PGB_GameScene_free(void *object){
     
     pgb_free(gameScene->rom_filename);
     
-    if(gameScene->save_filename){
+    if(gameScene->save_filename)
+    {
         pgb_free(gameScene->save_filename);
     }
     
-    if(context->rom){
+    if(context->rom)
+    {
         pgb_free(context->rom);
     }
     
-    if(context->cart_ram){
+    if(context->cart_ram)
+    {
         pgb_free(context->cart_ram);
     }
     

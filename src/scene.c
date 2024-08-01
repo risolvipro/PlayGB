@@ -9,7 +9,8 @@
 
 static void PGB_Scene_menu(void *object);
 
-PGB_Scene* PGB_Scene_new(void) {
+PGB_Scene* PGB_Scene_new(void)
+{
     PGB_Scene *scene = pgb_malloc(sizeof(PGB_Scene));
     
     scene->update = PGB_Scene_update;
@@ -22,16 +23,18 @@ PGB_Scene* PGB_Scene_new(void) {
     return scene;
 }
 
-void PGB_Scene_update(void *object) {
+void PGB_Scene_update(void *object)
+{
     
 }
 
-void PGB_Scene_menu(void *object) {
+void PGB_Scene_menu(void *object)
+{
     
 }
 
-void PGB_Scene_free(void *object) {
-    
+void PGB_Scene_free(void *object)
+{
     PGB_Scene *scene = object;
     pgb_free(scene);
 }
