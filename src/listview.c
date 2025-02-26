@@ -354,7 +354,7 @@ void PGB_ListView_draw(PGB_ListView *listView)
     }
 }
 
-void PGB_ListView_selectItem(PGB_ListView *listView, unsigned int index, bool animated){
+static void PGB_ListView_selectItem(PGB_ListView *listView, unsigned int index, bool animated){
     
     PGB_ListItem *item = listView->items->items[index];
     
@@ -391,7 +391,7 @@ void PGB_ListView_free(PGB_ListView *listView)
     pgb_free(listView);
 }
 
-PGB_ListItem* PGB_ListItem_new(void)
+static PGB_ListItem* PGB_ListItem_new(void)
 {
     PGB_ListItem *item = pgb_malloc(sizeof(PGB_ListItem));
     return item;
@@ -415,7 +415,7 @@ PGB_ListItemButton* PGB_ListItemButton_new(char *title)
     return buttonItem;
 }
 
-void PGB_ListItem_super_free(PGB_ListItem *item)
+static void PGB_ListItem_super_free(PGB_ListItem *item)
 {
     pgb_free(item);
 }

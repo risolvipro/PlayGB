@@ -405,8 +405,8 @@ struct gb_s
 	struct count_s counter;
 
 	/* TODO: Allow implementation to allocate WRAM, VRAM and Frame Buffer. */
-	uint8_t wram[WRAM_SIZE];
-	uint8_t vram[VRAM_SIZE];
+    uint8_t *wram; // wram[WRAM_SIZE];
+    uint8_t *vram; // vram[VRAM_SIZE];
 	uint8_t hram[HRAM_SIZE];
 	uint8_t oam[OAM_SIZE];
 
@@ -3821,6 +3821,8 @@ void gb_reset(struct gb_s *gb)
  * the CPU.
  */
 enum gb_init_error_e gb_init(struct gb_s *gb,
+                 uint8_t *wram,
+                 uint8_t *vram,
 			     uint8_t *gb_rom,
 			     void (*gb_error)(struct gb_s*, const enum gb_error_e, const uint16_t),
 			     void *priv)
@@ -3853,7 +3855,9 @@ enum gb_init_error_e gb_init(struct gb_s *gb,
 		2, 4, 8, 16, 32, 64, 128, 256, 512
 	};
 	const uint8_t num_ram_banks[] = { 0, 1, 1, 4, 16, 8 };
-
+    
+    gb->wram = wram;
+    gb->vram = vram;
 	gb->gb_rom = gb_rom;
 	gb->gb_error = gb_error;
 	gb->direct.priv = priv;

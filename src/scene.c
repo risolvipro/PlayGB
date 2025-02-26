@@ -28,7 +28,7 @@ void PGB_Scene_update(void *object)
     
 }
 
-void PGB_Scene_menu(void *object)
+static void PGB_Scene_menu(void *object)
 {
     
 }

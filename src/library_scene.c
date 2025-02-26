@@ -45,7 +45,7 @@ PGB_LibraryScene* PGB_LibraryScene_new(void)
     return libraryScene;
 }
 
-void PGB_LibraryScene_listFiles(const char *filename, void *userdata)
+static void PGB_LibraryScene_listFiles(const char *filename, void *userdata)
 {
     PGB_LibraryScene *libraryScene = userdata;
     
@@ -67,7 +67,7 @@ void PGB_LibraryScene_listFiles(const char *filename, void *userdata)
     }
 }
 
-void PGB_LibraryScene_reloadList(PGB_LibraryScene *libraryScene)
+static void PGB_LibraryScene_reloadList(PGB_LibraryScene *libraryScene)
 {
     for(int i = 0; i < libraryScene->games->length; i++)
     {
@@ -108,7 +108,7 @@ void PGB_LibraryScene_reloadList(PGB_LibraryScene *libraryScene)
     PGB_ListView_reload(libraryScene->listView);
 }
 
-void PGB_LibraryScene_update(void *object)
+static void PGB_LibraryScene_update(void *object)
 {
     PGB_LibraryScene *libraryScene = object;
     
@@ -194,23 +194,23 @@ void PGB_LibraryScene_update(void *object)
     }
 }
 
-void PGB_LibraryScene_didSelectRefresh(void *userdata)
+static void PGB_LibraryScene_didSelectRefresh(void *userdata)
 {
     PGB_LibraryScene *libraryScene = userdata;
     PGB_LibraryScene_reloadList(libraryScene);
 }
 
-void PGB_LibraryScene_didChangeSound(void *userdata)
+static void PGB_LibraryScene_didChangeSound(void *userdata)
 {
     preferences_sound_enabled = playdate->system->getMenuItemValue(audioMenuItem);
 }
 
-void PGB_LibraryScene_didChangeFPS(void *userdata)
+static void PGB_LibraryScene_didChangeFPS(void *userdata)
 {
     preferences_display_fps = playdate->system->getMenuItemValue(fpsMenuItem);
 }
 
-void PGB_LibraryScene_menu(void *object)
+static void PGB_LibraryScene_menu(void *object)
 {
     PGB_LibraryScene *libraryScene = object;
     
@@ -220,7 +220,7 @@ void PGB_LibraryScene_menu(void *object)
     fpsMenuItem = playdate->system->addCheckmarkMenuItem("Show FPS", preferences_display_fps, PGB_LibraryScene_didChangeFPS, libraryScene);
 }
 
-void PGB_LibraryScene_free(void *object)
+static void PGB_LibraryScene_free(void *object)
 {
     PGB_LibraryScene *libraryScene = object;
     

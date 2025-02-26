@@ -98,7 +98,7 @@ static struct chan {
 
 static int32_t vol_l, vol_r;
 
-static inline void set_note_freq(struct chan *c, const uint32_t freq)
+static void set_note_freq(struct chan *c, const uint32_t freq)
 {
 	/* Lowest expected value of freq is 64. */
 	c->freq_inc = freq * (uint32_t)(FREQ_INC_REF / AUDIO_SAMPLE_RATE);
@@ -117,7 +117,7 @@ static void chan_enable(const uint_fast8_t i, const bool enable)
 	//audio_mem[0xFF26 - AUDIO_ADDR_COMPENSATION] |= 0x80 | ((uint8_t)enable) << i;
 }
 
-static inline void update_env(struct chan *c)
+static void update_env(struct chan *c)
 {
 	c->env.counter += c->env.inc;
 
@@ -133,7 +133,7 @@ static inline void update_env(struct chan *c)
 	}
 }
 
-static inline void update_len(struct chan *c)
+static void update_len(struct chan *c)
 {
 	if (!c->len.enabled)
 		return;
@@ -145,7 +145,7 @@ static inline void update_len(struct chan *c)
 	}
 }
 
-static inline bool update_freq(struct chan *c, uint32_t *pos)
+static bool update_freq(struct chan *c, uint32_t *pos)
 {
 	uint32_t inc = c->freq_inc - *pos;
 	c->freq_counter += inc;
@@ -160,7 +160,7 @@ static inline bool update_freq(struct chan *c, uint32_t *pos)
 	}
 }
 
-static inline void update_sweep(struct chan *c)
+static void update_sweep(struct chan *c)
 {
 	c->sweep.counter += c->sweep.inc;
 

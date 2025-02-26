@@ -17,6 +17,8 @@ PGB_GameScene *audioGameScene = NULL;
 typedef struct PGB_GameSceneContext {
     PGB_GameScene *scene;
     struct gb_s gb;
+    uint8_t wram[WRAM_SIZE];
+    uint8_t vram[VRAM_SIZE];
     uint8_t *rom;
     uint8_t *cart_ram;
 } PGB_GameSceneContext;
@@ -39,7 +41,7 @@ static void gb_error(struct gb_s *gb, const enum gb_error_e gb_err, const uint16
 static const char *startButtonText = "start";
 static const char *selectButtonText = "select";
 
-static uint8_t PGB_GameScene_bitmask[256][4][4];
+static uint8_t PGB_bitmask[4][4][4];
 static bool PGB_GameScene_bitmask_done = false;
 
 PGB_GameScene* PGB_GameScene_new(const char *rom_filename)
@@ -98,7 +100,7 @@ PGB_GameScene* PGB_GameScene_new(const char *rom_filename)
     {
         context->rom = rom;
         
-        enum gb_init_error_e gb_ret = gb_init(&context->gb, rom, gb_error, NULL);
+        enum gb_init_error_e gb_ret = gb_init(&context->gb, context->wram, context->vram, rom, gb_error, NULL);
         
         if(gb_ret == GB_INIT_NO_ERROR)
         {
@@ -145,7 +147,7 @@ PGB_GameScene* PGB_GameScene_new(const char *rom_filename)
     return gameScene;
 }
 
-void PGB_GameScene_selector_init(PGB_GameScene *gameScene)
+static void PGB_GameScene_selector_init(PGB_GameScene *gameScene)
 {
     int startButtonWidth = playdate->graphics->getTextWidth(PGB_App->labelFont, startButtonText, strlen(startButtonText), kUTF8Encoding, 0);
     int selectButtonWidth = playdate->graphics->getTextWidth(PGB_App->labelFont, selectButtonText, strlen(selectButtonText), kUTF8Encoding, 0);
@@ -199,7 +201,7 @@ void PGB_GameScene_selector_init(PGB_GameScene *gameScene)
 /**
  * Returns a pointer to the allocated space containing the ROM. Must be freed.
  */
-uint8_t *read_rom_to_ram(const char *filename, PGB_GameSceneError *sceneError)
+static uint8_t *read_rom_to_ram(const char *filename, PGB_GameSceneError *sceneError)
 {
     *sceneError = PGB_GameSceneErrorUndefined;
     
@@ -247,7 +249,7 @@ uint8_t *read_rom_to_ram(const char *filename, PGB_GameSceneError *sceneError)
     return rom;
 }
 
-void read_cart_ram_file(const char *save_filename, uint8_t **dest, const size_t len){
+static void read_cart_ram_file(const char *save_filename, uint8_t **dest, const size_t len){
 
     /* If save file not required. */
     if(len == 0)
@@ -277,7 +279,7 @@ void read_cart_ram_file(const char *save_filename, uint8_t **dest, const size_t 
     playdate->file->close(f);
 }
 
-void write_cart_ram_file(const char *save_filename, uint8_t **dest, const size_t len)
+static void write_cart_ram_file(const char *save_filename, uint8_t **dest, const size_t len)
 {
     if(len == 0 || *dest == NULL)
     {
@@ -301,7 +303,7 @@ void write_cart_ram_file(const char *save_filename, uint8_t **dest, const size_t
  * Handles an error reported by the emulator. The emulator context may be used
  * to better understand why the error given in gb_err was reported.
  */
-void gb_error(struct gb_s *gb, const enum gb_error_e gb_err, const uint16_t val)
+static void gb_error(struct gb_s *gb, const enum gb_error_e gb_err, const uint16_t val)
 {
     PGB_GameSceneContext *context = gb->direct.priv;
     
@@ -340,7 +342,7 @@ void gb_error(struct gb_s *gb, const enum gb_error_e gb_err, const uint16_t val)
     return;
 }
 
-void PGB_GameScene_update(void *object)
+static void PGB_GameScene_update(void *object)
 {
     PGB_GameScene *gameScene = object;
     
@@ -447,7 +449,12 @@ void PGB_GameScene_update(void *object)
         memset(gameScene->debug_updatedRows, 0, LCD_ROWS);
         #endif
         
-        gb_run_frame(&context->gb);
+        struct gb_s gb;
+        memcpy(&gb, &context->gb, sizeof(struct gb_s));
+        
+        gb_run_frame(&gb);
+        
+        memcpy(&context->gb, &gb, sizeof(struct gb_s));
         
         bool gb_draw = (!context->gb.direct.frame_skip || !context->gb.display.frame_skip_count || needsDisplay);
         
@@ -519,12 +526,12 @@ void PGB_GameScene_update(void *object)
                     
                     for(int x = 0; x < LCD_WIDTH; x++)
                     {
-                        uint8_t pixel = pixels[x];
+                        uint8_t pixel = pixels[x] & 3;
                         
-                        framebuffer[fb_index1] |= PGB_GameScene_bitmask[pixel][bit][d_row1];
+                        framebuffer[fb_index1] |= PGB_bitmask[pixel][bit][d_row1];
                         if(y_offset == 2)
                         {
-                            framebuffer[fb_index2] |= PGB_GameScene_bitmask[pixel][bit][d_row2];
+                            framebuffer[fb_index2] |= PGB_bitmask[pixel][bit][d_row2];
                         }
                         
                         bit++;
@@ -674,7 +681,7 @@ void PGB_GameScene_update(void *object)
     }
 }
 
-void PGB_GameScene_didSelectSave(void *userdata)
+static void PGB_GameScene_didSelectSave(void *userdata)
 {
     PGB_GameScene *gameScene = userdata;
     
@@ -685,7 +692,7 @@ void PGB_GameScene_didSelectSave(void *userdata)
     gameScene->audioLocked = false;
 }
 
-void PGB_GameScene_didSelectLibrary(void *userdata)
+static void PGB_GameScene_didSelectLibrary(void *userdata)
 {
     PGB_GameScene *gameScene = userdata;
     
@@ -695,10 +702,8 @@ void PGB_GameScene_didSelectLibrary(void *userdata)
     PGB_present(libraryScene->scene);
 }
 
-void PGB_GameScene_refreshMenu(PGB_GameScene *gameScene)
+static void PGB_GameScene_refreshMenu(PGB_GameScene *gameScene)
 {
-    playdate->system->removeAllMenuItems();
-
     playdate->system->addMenuItem("Library", PGB_GameScene_didSelectLibrary, gameScene);
     
     if(gameScene->state == PGB_GameSceneStateLoaded)
@@ -707,14 +712,14 @@ void PGB_GameScene_refreshMenu(PGB_GameScene *gameScene)
     }
 }
 
-void PGB_GameScene_menu(void *object)
+static void PGB_GameScene_menu(void *object)
 {
     PGB_GameScene *gameScene = object;
     
     PGB_GameScene_refreshMenu(gameScene);
 }
 
-void PGB_GameScene_saveGame(PGB_GameScene *gameScene)
+static void PGB_GameScene_saveGame(PGB_GameScene *gameScene)
 {
     if(gameScene->state == PGB_GameSceneStateLoaded)
     {
@@ -727,7 +732,7 @@ void PGB_GameScene_saveGame(PGB_GameScene *gameScene)
     }
 }
 
-void PGB_GameScene_generateBitmask(void)
+static void PGB_GameScene_generateBitmask(void)
 {
     if(PGB_GameScene_bitmask_done)
     {
@@ -736,10 +741,8 @@ void PGB_GameScene_generateBitmask(void)
     
     PGB_GameScene_bitmask_done = true;
     
-    for(int c = 0; c < 256; c++)
+    for(int palette = 0; palette < 4; palette++)
     {
-        int palette = c & 3;
-        
         for(int y = 0; y < 4; y++)
         {
             int x_offset = 0;
@@ -756,7 +759,7 @@ void PGB_GameScene_generateBitmask(void)
                     }
                 }
                 
-                PGB_GameScene_bitmask[c][i][y] = mask;
+                PGB_bitmask[palette][i][y] = mask;
                 
                 x_offset += 2;
                 
@@ -769,7 +772,7 @@ void PGB_GameScene_generateBitmask(void)
     }
 }
 
-void PGB_GameScene_free(void *object)
+static void PGB_GameScene_free(void *object)
 {
     PGB_GameScene *gameScene = object;
     PGB_GameSceneContext *context = gameScene->context;
