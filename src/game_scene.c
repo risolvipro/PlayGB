@@ -27,7 +27,6 @@ static void PGB_GameScene_selector_init(PGB_GameScene *gameScene);
 static void PGB_GameScene_update(void *object);
 static void PGB_GameScene_menu(void *object);
 static void PGB_GameScene_saveGame(PGB_GameScene *gameScene);
-static void PGB_GameScene_refreshMenu(PGB_GameScene *gameScene);
 static void PGB_GameScene_generateBitmask(void);
 static void PGB_GameScene_free(void *object);
 
@@ -100,7 +99,7 @@ PGB_GameScene* PGB_GameScene_new(const char *rom_filename)
     {
         context->rom = rom;
         
-        enum gb_init_error_e gb_ret = gb_init(&context->gb, context->wram, context->vram, rom, gb_error, NULL);
+        enum gb_init_error_e gb_ret = gb_init(&context->gb, context->wram, context->vram, rom, gb_error, context);
         
         if(gb_ret == GB_INIT_NO_ERROR)
         {
@@ -336,7 +335,7 @@ static void gb_error(struct gb_s *gb, const enum gb_error_e gb_err, const uint16
         context->scene->state = PGB_GameSceneStateError;
         context->scene->error = PGB_GameSceneErrorFatal;
         
-        PGB_GameScene_refreshMenu(context->scene);
+        PGB_Scene_refreshMenu(context->scene->scene);
     }
 
     return;
@@ -702,21 +701,16 @@ static void PGB_GameScene_didSelectLibrary(void *userdata)
     PGB_present(libraryScene->scene);
 }
 
-static void PGB_GameScene_refreshMenu(PGB_GameScene *gameScene)
+static void PGB_GameScene_menu(void *object)
 {
+    PGB_GameScene *gameScene = object;
+    
     playdate->system->addMenuItem("Library", PGB_GameScene_didSelectLibrary, gameScene);
     
     if(gameScene->state == PGB_GameSceneStateLoaded)
     {
         playdate->system->addMenuItem("Save", PGB_GameScene_didSelectSave, gameScene);
     }
-}
-
-static void PGB_GameScene_menu(void *object)
-{
-    PGB_GameScene *gameScene = object;
-    
-    PGB_GameScene_refreshMenu(gameScene);
 }
 
 static void PGB_GameScene_saveGame(PGB_GameScene *gameScene)

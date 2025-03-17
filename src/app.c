@@ -69,8 +69,7 @@ void PGB_update(float dt)
         PGB_App->scene = PGB_App->pendingScene;
         PGB_App->pendingScene = NULL;
         
-        playdate->system->removeAllMenuItems();
-        PGB_App->scene->menu(PGB_App->scene->managedObject);
+        PGB_Scene_refreshMenu(PGB_App->scene);
     }
         
     #if PGB_DEBUG

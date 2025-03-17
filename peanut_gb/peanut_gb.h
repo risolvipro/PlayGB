@@ -1571,7 +1571,7 @@ void __gb_step_cpu(struct gb_s *gb)
     
     /* Execute opcode */
     
-    static const void* op_table[] = {
+    static const void* op_table[256] = {
         &&exit, &&_0x01, &&_0x02, &&_0x03, &&_0x04, &&_0x05, &&_0x06, &&_0x07, &&_0x08, &&_0x09,
         &&_0x0A, &&_0x0B, &&_0x0C, &&_0x0D, &&_0x0E, &&_0x0F, &&_0x10, &&_0x11, &&_0x12, &&_0x13,
         &&_0x14, &&_0x15, &&_0x16, &&_0x17, &&_0x18, &&_0x19, &&_0x1A, &&_0x1B, &&_0x1C, &&_0x1D,
@@ -3525,7 +3525,8 @@ void __gb_step_cpu(struct gb_s *gb)
 
     _invalid: {
         (gb->gb_error)(gb, GB_INVALID_OPCODE, opcode);
-        goto exit;
+        // Early exit
+        gb->gb_frame = 1;
     }
 
     exit: {
@@ -3814,6 +3815,7 @@ void gb_reset(struct gb_s *gb)
 	gb->gb_reg.P1 = 0xCF;
 
 	memset(gb->vram, 0x00, VRAM_SIZE);
+    memset(gb->wram, 0x00, WRAM_SIZE);
 }
 
 /**

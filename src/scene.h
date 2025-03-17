@@ -24,6 +24,8 @@ typedef struct PGB_Scene {
 
 PGB_Scene* PGB_Scene_new(void);
 
+void PGB_Scene_refreshMenu(PGB_Scene *scene);
+
 void PGB_Scene_update(void *scene);
 void PGB_Scene_free(void *scene);
 
