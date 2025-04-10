@@ -53,6 +53,9 @@ typedef struct {
 typedef struct {
     PGB_ListItem *item;
     char *title;
+    LCDBitmap *coverImage;
+    float textScrollOffset;
+    bool needsTextScroll;
 } PGB_ListItemButton;
 
 typedef struct {
@@ -72,6 +75,9 @@ typedef struct {
     float crankResetTime;
     bool needsDisplay;
     PDRect frame;
+    
+    float textScrollTime;
+    float textScrollPause;
 } PGB_ListView;
 
 PGB_ListView* PGB_ListView_new(void);
