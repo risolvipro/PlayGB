@@ -354,7 +354,8 @@ void PGB_ListView_draw(PGB_ListView *listView)
         int listY = listView->frame.y;
         
         int screenWidth = playdate->display->getWidth();
-        int halfWidth = screenWidth / 2;
+        int rightPanelWidth = 241;
+        int leftPanelWidth = screenWidth - rightPanelWidth;
 
         playdate->graphics->fillRect(listX, listY, listView->frame.width, listView->frame.height, kColorWhite);
                 
@@ -389,7 +390,7 @@ void PGB_ListView_draw(PGB_ListView *listView)
                 
                 playdate->graphics->setFont(PGB_App->subheadFont);
                 
-                int maxTextWidth = halfWidth - PGB_ListView_inset - 1;
+                int maxTextWidth = leftPanelWidth - PGB_ListView_inset - 1;
                 
                 playdate->graphics->setClipRect(textX, rowY, maxTextWidth, item->height);
                 

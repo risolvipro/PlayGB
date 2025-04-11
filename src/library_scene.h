@@ -36,7 +36,7 @@ typedef struct PGB_LibraryScene {
     PGB_ListView *listView;
     bool firstLoad;
     PGB_LibrarySceneTab tab;
-    int lastSelectedItem;  // Per tracciare l'ultima selezione
+    int lastSelectedItem;
 } PGB_LibraryScene;
 
 PGB_LibraryScene* PGB_LibraryScene_new(void);

@@ -155,10 +155,12 @@ static void PGB_LibraryScene_update(void *object)
     {
         int screenWidth = playdate->display->getWidth();
         int screenHeight = playdate->display->getHeight();
-        int halfWidth = screenWidth / 2;
+        
+        int rightPanelWidth = 241;
+        int leftPanelWidth = screenWidth - rightPanelWidth;
         
         libraryScene->listView->needsDisplay = needsDisplay;
-        libraryScene->listView->frame = PDRectMake(0, 0, halfWidth, screenHeight);
+        libraryScene->listView->frame = PDRectMake(0, 0, leftPanelWidth, screenHeight);
         
         PGB_ListView_update(libraryScene->listView);
         PGB_ListView_draw(libraryScene->listView);
@@ -171,7 +173,7 @@ static void PGB_LibraryScene_update(void *object)
         {
             libraryScene->lastSelectedItem = selectedIndex;
             
-            playdate->graphics->drawLine(halfWidth, 0, halfWidth, screenHeight, 1, kColorBlack);
+            playdate->graphics->drawLine(leftPanelWidth, 0, leftPanelWidth, screenHeight, 1, kColorBlack);
             
             playdate->system->logToConsole("Selected item changed: %d", selectedIndex);
             if (selectedIndex >= 0 && selectedIndex < libraryScene->games->length) {
@@ -179,15 +181,13 @@ static void PGB_LibraryScene_update(void *object)
                 
                 playdate->system->logToConsole("Trying to load cover: %s", selectedGame->coverPath);
                 
-                playdate->graphics->fillRect(halfWidth+1, 0, halfWidth, screenHeight, kColorWhite);
+                playdate->graphics->fillRect(leftPanelWidth+1, 0, rightPanelWidth-1, screenHeight, kColorWhite);
                 
                 FileStat fileStat;
                 int statResult = playdate->file->stat(selectedGame->coverPath, &fileStat);
                 
                 if (statResult == 0) {
                     playdate->system->logToConsole("Cover file exists! Size: %d bytes", fileStat.size);
-                    
-                    playdate->graphics->fillRect(halfWidth+1, 0, halfWidth, screenHeight, kColorWhite);
                     
                     playdate->system->logToConsole("Loading image: %s", selectedGame->coverPath);
                     LCDBitmap *coverImage = NULL;
@@ -203,41 +203,45 @@ static void PGB_LibraryScene_update(void *object)
                         playdate->system->logToConsole("Image dimensions: %d x %d", imageWidth, imageHeight);
                         
                         if (imageWidth > 0 && imageHeight > 0) {
-                            int bitmapX = halfWidth + 10; 
-                            int bitmapY = 40;
+                            int maxWidth = 240;
+                            int maxHeight = 240;
                             
-                            playdate->system->logToConsole("Drawing bitmap at %d,%d", bitmapX, bitmapY);
-                            playdate->graphics->drawBitmap(coverImage, bitmapX, bitmapY, kBitmapUnflipped);
-                            
-                            if (imageHeight < 80 && imageWidth < 80) {
-                                int patternY = bitmapY + imageHeight + 20;
-                                playdate->system->logToConsole("Drawing pattern at y=%d", patternY);
+                            if (imageWidth > maxWidth || imageHeight > maxHeight) {
+                                LCDBitmap *scaledBitmap = NULL;
                                 
-                                const char *patternMsg = "Pattern test";
-                                playdate->graphics->drawText(patternMsg, strlen(patternMsg), kUTF8Encoding, bitmapX, patternY - 20);
+                                float scaleX = (float)maxWidth / imageWidth;
+                                float scaleY = (float)maxHeight / imageHeight;
+                                float scale = scaleX < scaleY ? scaleX : scaleY;
                                 
-                                uint8_t *data;
-                                int rowbytes;
-                                playdate->graphics->getBitmapData(coverImage, NULL, NULL, &rowbytes, &data, NULL);
-                                for (int y = 0; y < imageHeight; y++) {
-                                    for (int x = 0; x < imageWidth; x++) {
-                                        int byteIndex = y * rowbytes + (x / 8);
-                                        int bitIndex = 7 - (x % 8);
-                                        
-                                        bool pixelOn = (data[byteIndex] & (1 << bitIndex)) != 0;
-                                        
-                                        if (pixelOn) {
-                                            playdate->graphics->fillRect(bitmapX + x, patternY + y, 1, 1, kColorBlack);
-                                        }
-                                    }
+                                int scaledWidth = imageWidth * scale;
+                                int scaledHeight = imageHeight * scale;
+                                
+                                if (scaledWidth > 0 && scaledHeight > 0) {
+                                    scaledBitmap = playdate->graphics->newBitmap(scaledWidth, scaledHeight, kColorClear);
+                                    playdate->graphics->pushContext(scaledBitmap);
+                                    playdate->graphics->drawScaledBitmap(coverImage, 0, 0, scale, scale);
+                                    playdate->graphics->popContext();
+                                    
+                                    int coverX = leftPanelWidth + 1;
+                                    int coverY = (screenHeight - scaledHeight) / 2;
+                                    
+                                    playdate->system->logToConsole("Drawing scaled bitmap at %d,%d", coverX, coverY);
+                                    playdate->graphics->drawBitmap(scaledBitmap, coverX, coverY, kBitmapUnflipped);
+                                    playdate->graphics->freeBitmap(scaledBitmap);
                                 }
+                            } else {
+                                int coverX = leftPanelWidth + 1;
+                                int coverY = (screenHeight - imageHeight) / 2;
+                                
+                                playdate->system->logToConsole("Drawing bitmap at %d,%d", coverX, coverY);
+                                playdate->graphics->drawBitmap(coverImage, coverX, coverY, kBitmapUnflipped);
                             }
                             
                         } else {
                             const char *message = "Invalid image";
                             playdate->graphics->setFont(PGB_App->bodyFont);
                             int textWidth = playdate->graphics->getTextWidth(PGB_App->bodyFont, message, strlen(message), kUTF8Encoding, 0);
-                            int textX = halfWidth + (halfWidth - textWidth) / 2;
+                            int textX = leftPanelWidth + (rightPanelWidth - textWidth) / 2;
                             int textY = screenHeight / 2;
                             
                             playdate->graphics->drawText(message, strlen(message), kUTF8Encoding, textX, textY);
@@ -249,7 +253,7 @@ static void PGB_LibraryScene_update(void *object)
                         const char *message = "Error loading image";
                         playdate->graphics->setFont(PGB_App->bodyFont);
                         int textWidth = playdate->graphics->getTextWidth(PGB_App->bodyFont, message, strlen(message), kUTF8Encoding, 0);
-                        int textX = halfWidth + (halfWidth - textWidth) / 2;
+                        int textX = leftPanelWidth + (rightPanelWidth - textWidth) / 2;
                         int textY = screenHeight / 2;
                         
                         playdate->graphics->drawText(message, strlen(message), kUTF8Encoding, textX, textY);
@@ -261,11 +265,13 @@ static void PGB_LibraryScene_update(void *object)
                     const char *message = "Missing cover";
                     playdate->graphics->setFont(PGB_App->bodyFont);
                     int textWidth = playdate->graphics->getTextWidth(PGB_App->bodyFont, message, strlen(message), kUTF8Encoding, 0);
-                    int textX = halfWidth + (halfWidth - textWidth) / 2;
+                    int textX = leftPanelWidth + (rightPanelWidth - textWidth) / 2;
                     int textY = screenHeight / 2;
                     
                     playdate->graphics->drawText(message, strlen(message), kUTF8Encoding, textX, textY);
                 }
+                
+                playdate->graphics->drawLine(leftPanelWidth, 0, leftPanelWidth, screenHeight, 1, kColorBlack);
             }
         }
     }
