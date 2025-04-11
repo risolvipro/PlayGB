@@ -398,14 +398,6 @@ PGB_Game* PGB_Game_new(const char *filename)
     if (playdate->file->stat(coverPath, &fileStat) == 0) {
         found = true;
         playdate->system->logToConsole("Found PDI cover with clean name: %s", coverPath);
-    } else {
-        pgb_free(coverPath);
-        
-        playdate->system->formatString(&coverPath, "%s/%s.png", PGB_gamesPath, cleanName);
-        if (playdate->file->stat(coverPath, &fileStat) == 0) {
-            found = true;
-            playdate->system->logToConsole("Found PNG cover with clean name: %s", coverPath);
-        }
     }
     
     if (!found) {
@@ -414,14 +406,7 @@ PGB_Game* PGB_Game_new(const char *filename)
         }
         
         playdate->system->formatString(&coverPath, "%s/%s.pdi", PGB_gamesPath, basename);
-        if (playdate->file->stat(coverPath, &fileStat) == 0) {
-            playdate->system->logToConsole("Found PDI cover with original name: %s", coverPath);
-        } else {
-            pgb_free(coverPath);
-            
-            playdate->system->formatString(&coverPath, "%s/%s.png", PGB_gamesPath, basename);
-            playdate->system->logToConsole("Using PNG with original name: %s", coverPath);
-        }
+        playdate->system->logToConsole("Using PDI with original name: %s", coverPath);
     }
     
     pgb_free(cleanName);
