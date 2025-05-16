@@ -31,8 +31,10 @@ void PGB_init(void)
     PGB_App->labelFont = playdate->graphics->loadFont("fonts/Nontendo-Bold", NULL);
     
     PGB_App->selectorBitmapTable = playdate->graphics->loadBitmapTable("images/selector/selector", NULL);
-    PGB_App->startSelectBitmap = playdate->graphics->loadBitmap("images/selector-start-select", NULL);
-    
+    PGB_App->selectorBackground = playdate->graphics->getTableBitmap(PGB_App->selectorBitmapTable, 0);
+    PGB_App->selectorButton = playdate->graphics->getTableBitmap(PGB_App->selectorBitmapTable, 1);
+    PGB_App->selectorFilledButton = playdate->graphics->getTableBitmap(PGB_App->selectorBitmapTable, 2);
+
     // add audio callback
     PGB_App->soundSource = playdate->sound->addSource(audio_callback, &audioGameScene, 1);
     
@@ -68,10 +70,9 @@ void PGB_update(float dt)
         
         PGB_App->scene = PGB_App->pendingScene;
         PGB_App->pendingScene = NULL;
-        
         PGB_Scene_refreshMenu(PGB_App->scene);
     }
-        
+    
     #if PGB_DEBUG
     playdate->display->setRefreshRate(60);
     #else

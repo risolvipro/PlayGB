@@ -32,7 +32,9 @@ typedef enum {
 typedef struct {
     PGB_GameSceneState state;
     PGB_GameSceneError error;
-    int selectorIndex;
+    int selectorToggleY;
+    bool selectorStartPressed;
+    bool selectorSelectPressed;
     bool empty;
 } PGB_GameSceneModel;
 
@@ -43,16 +45,16 @@ typedef struct {
     int containerHeight;
     int containerX;
     int containerY;
+    int toggleSize;
     int x;
     int y;
     int startButtonX;
     int startButtonY;
     int selectButtonX;
     int selectButtonY;
-    int numberOfFrames;
     float triggerAngle;
     float deadAngle;
-    float index;
+    float toggleY;
     bool startPressed;
     bool selectPressed;
 } PGB_CrankSelector;
@@ -65,7 +67,8 @@ typedef struct PGB_GameScene {
     bool needsDisplay;
     bool audioEnabled;
     bool audioLocked;
-    
+    unsigned int rtc_time;
+
     PGB_GameSceneState state;
     PGB_GameSceneContext *context;
     PGB_GameSceneModel model;
@@ -73,12 +76,10 @@ typedef struct PGB_GameScene {
     
     PGB_CrankSelector selector;
     
-    #if PGB_DEBUG && PGB_DEBUG_UPDATED_ROWS
+#if PGB_DEBUG && PGB_DEBUG_UPDATED_ROWS
     PDRect debug_highlightFrame;
     bool debug_updatedRows[LCD_ROWS];
-    #endif
-    
-    float rtc_timer;
+#endif
 } PGB_GameScene;
 
 PGB_GameScene* PGB_GameScene_new(const char *rom_filename);

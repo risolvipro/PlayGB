@@ -14,8 +14,8 @@
 
 extern PlaydateAPI *playdate;
 
-#define PGB_DEBUG false
-#define PGB_DEBUG_UPDATED_ROWS false
+#define PGB_DEBUG 0
+#define PGB_DEBUG_UPDATED_ROWS 0
 
 #define PGB_LCD_WIDTH 320
 #define PGB_LCD_HEIGHT 240
@@ -24,8 +24,11 @@ extern PlaydateAPI *playdate;
 #define PGB_LCD_X 32 // multiple of 8
 #define PGB_LCD_Y 0
 
-#define PGB_MAX(x, y) (((x) > (y)) ? (x) : (y))
-#define PGB_MIN(x, y) (((x) < (y)) ? (x) : (y))
+typedef enum {
+    PGB_HardwareRevUnknown,
+    PGB_HardwareRevA,
+    PGB_HardwareRevB
+} PGB_HardwareRev;
 
 extern const uint8_t PGB_patterns[4][4][4];
 
@@ -34,8 +37,19 @@ extern const char *PGB_gamesPath;
 
 char* string_copy(const char *string);
 
+static inline int pgb_min(const int a, const int b)
+{
+    return a < b ? a : b;
+}
+
+static inline int pgb_max(const int a, const int b)
+{
+    return a > b ? a : b;
+}
+
 char* pgb_save_filename(const char *filename, bool isRecovery);
 char* pgb_extract_fs_error_code(const char *filename);
+PGB_HardwareRev pgb_get_hardware_rev(void);
 
 float pgb_easeInOutQuad(float x);
 

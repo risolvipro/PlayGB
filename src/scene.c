@@ -24,6 +24,11 @@ PGB_Scene* PGB_Scene_new(void)
     return scene;
 }
 
+void PGB_Scene_load(void *object)
+{
+    
+}
+
 void PGB_Scene_update(void *object)
 {
     

@@ -102,6 +102,19 @@ char* pgb_extract_fs_error_code(const char *fileError)
     return NULL;
 }
 
+PGB_HardwareRev pgb_get_hardware_rev(void)
+{
+    if(&eventHandler == (void*)0x60001b31)
+    {
+        return PGB_HardwareRevA;
+    }
+    else if(&eventHandler == (void*)0x90001b31)
+    {
+        return PGB_HardwareRevB;
+    }
+    return PGB_HardwareRevUnknown;
+}
+
 float pgb_easeInOutQuad(float x)
 {
     return (x < 0.5f) ? 2 * x * x : 1 - powf(-2 * x + 2, 2) * 0.5f;
