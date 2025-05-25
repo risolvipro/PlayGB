@@ -10,7 +10,7 @@
 #include <string.h>
 
 #include "minigb_apu.h"
-#include "game_scene.h"
+#include "../src/game_scene.h"
 
 #define DMG_CLOCK_FREQ_U	((unsigned)DMG_CLOCK_FREQ)
 #define AUDIO_NSAMPLES		(AUDIO_SAMPLES * 2u)
