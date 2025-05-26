@@ -38,10 +38,10 @@ UINCDIR += minigb_apu
 UINCDIR += lcd
 
 # List all user C define here, like -D_DEBUG=1
-UDEFS = 
+UDEFS =
 
 # Define ASM defines here
-UADEFS = 
+UADEFS =
 
 # List the user directory to look for the libraries here
 ULIBDIR =
@@ -50,3 +50,8 @@ ULIBDIR =
 ULIBS =
 
 include $(SDK)/C_API/buildsupport/common.mk
+
+# Add -flto to compiler and linker flags.
+OPT += -flto
+LDFLAGS += -flto
+
