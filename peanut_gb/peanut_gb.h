@@ -1222,6 +1222,7 @@ static int compare_sprites(const void *in1, const void *in2)
 }
 #endif
 
+__attribute__((optimize("Ofast")))
 void __gb_draw_line(struct gb_s *gb)
 {
     uint8_t *pixels = gb->display.back_fb_enabled ? gb_back_fb[gb->gb_reg.LY] : gb_front_fb[gb->gb_reg.LY];
