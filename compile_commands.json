@@ -1,0 +1,57 @@
+[
+  {
+    "directory": "/${workspaceFolder}",
+    "command": "/usr/local/bin/arm-none-eabi-gcc -g3 -c -mthumb  -D__FPU_USED=1 -O2 -falign-functions=16 -fomit-frame-pointer -gdwarf-2 -Wall -Wno-unused -Wstrict-prototypes -Wno-unknown-pragmas -fverbose-asm -Wdouble-promotion  -fno-common -ffunction-sections -fdata-sections -Wa,-ahlms=build/minigb_apu.lst -DTARGET_PLAYDATE=1 -DTARGET_EXTENSION=1  -MD -MP -MF build/dep/minigb_apu.o.d -I . -I . -I ${env:PLAYDATE_SDK_PATH}/C_API -I src -I peanut_gb -I minigb_apu -I lcd minigb_apu/minigb_apu.c -o build/minigb_apu/minigb_apu.o",
+    "file": "minigb_apu/minigb_apu.c"
+  },
+  {
+    "directory": "/${workspaceFolder}",
+    "command": "/usr/local/bin/arm-none-eabi-gcc -g3 -c -mthumb  -D__FPU_USED=1 -O2 -falign-functions=16 -fomit-frame-pointer -gdwarf-2 -Wall -Wno-unused -Wstrict-prototypes -Wno-unknown-pragmas -fverbose-asm -Wdouble-promotion  -fno-common -ffunction-sections -fdata-sections -Wa,-ahlms=build/main.lst -DTARGET_PLAYDATE=1 -DTARGET_EXTENSION=1  -MD -MP -MF build/dep/main.o.d -I . -I . -I ${env:PLAYDATE_SDK_PATH}/C_API -I src -I peanut_gb -I minigb_apu -I lcd main.c -o build/main.o",
+    "file": "main.c"
+  },
+  {
+    "directory": "/${workspaceFolder}",
+    "command": "/usr/local/bin/arm-none-eabi-gcc -g3 -c -mthumb  -D__FPU_USED=1 -O2 -falign-functions=16 -fomit-frame-pointer -gdwarf-2 -Wall -Wno-unused -Wstrict-prototypes -Wno-unknown-pragmas -fverbose-asm -Wdouble-promotion  -fno-common -ffunction-sections -fdata-sections -Wa,-ahlms=build/app.lst -DTARGET_PLAYDATE=1 -DTARGET_EXTENSION=1  -MD -MP -MF build/dep/app.o.d -I . -I . -I ${env:PLAYDATE_SDK_PATH}/C_API -I src -I peanut_gb -I minigb_apu -I lcd src/app.c -o build/src/app.o",
+    "file": "src/app.c"
+  },
+  {
+    "directory": "/${workspaceFolder}",
+    "command": "/usr/local/bin/arm-none-eabi-gcc -g3 -c -mthumb  -D__FPU_USED=1 -O2 -falign-functions=16 -fomit-frame-pointer -gdwarf-2 -Wall -Wno-unused -Wstrict-prototypes -Wno-unknown-pragmas -fverbose-asm -Wdouble-promotion  -fno-common -ffunction-sections -fdata-sections -Wa,-ahlms=build/utility.lst -DTARGET_PLAYDATE=1 -DTARGET_EXTENSION=1  -MD -MP -MF build/dep/utility.o.d -I . -I . -I ${env:PLAYDATE_SDK_PATH}/C_API -I src -I peanut_gb -I minigb_apu -I lcd src/utility.c -o build/src/utility.o",
+    "file": "src/utility.c"
+  },
+  {
+    "directory": "/${workspaceFolder}",
+    "command": "/usr/local/bin/arm-none-eabi-gcc -g3 -c -mthumb  -D__FPU_USED=1 -O2 -falign-functions=16 -fomit-frame-pointer -gdwarf-2 -Wall -Wno-unused -Wstrict-prototypes -Wno-unknown-pragmas -fverbose-asm -Wdouble-promotion  -fno-common -ffunction-sections -fdata-sections -Wa,-ahlms=build/scene.lst -DTARGET_PLAYDATE=1 -DTARGET_EXTENSION=1  -MD -MP -MF build/dep/scene.o.d -I . -I . -I ${env:PLAYDATE_SDK_PATH}/C_API -I src -I peanut_gb -I minigb_apu -I lcd src/scene.c -o build/src/scene.o",
+    "file": "src/scene.c"
+  },
+  {
+    "directory": "/${workspaceFolder}",
+    "command": "/usr/local/bin/arm-none-eabi-gcc -g3 -c -mthumb  -D__FPU_USED=1 -O2 -falign-functions=16 -fomit-frame-pointer -gdwarf-2 -Wall -Wno-unused -Wstrict-prototypes -Wno-unknown-pragmas -fverbose-asm -Wdouble-promotion  -fno-common -ffunction-sections -fdata-sections -Wa,-ahlms=build/library_scene.lst -DTARGET_PLAYDATE=1 -DTARGET_EXTENSION=1  -MD -MP -MF build/dep/library_scene.o.d -I . -I . -I ${env:PLAYDATE_SDK_PATH}/C_API -I src -I peanut_gb -I minigb_apu -I lcd src/library_scene.c -o build/src/library_scene.o",
+    "file": "src/library_scene.c"
+  },
+  {
+    "directory": "/${workspaceFolder}",
+    "command": "/usr/local/bin/arm-none-eabi-gcc -g3 -c -mthumb  -D__FPU_USED=1 -O2 -falign-functions=16 -fomit-frame-pointer -gdwarf-2 -Wall -Wno-unused -Wstrict-prototypes -Wno-unknown-pragmas -fverbose-asm -Wdouble-promotion  -fno-common -ffunction-sections -fdata-sections -Wa,-ahlms=build/game_scene.lst -DTARGET_PLAYDATE=1 -DTARGET_EXTENSION=1  -MD -MP -MF build/dep/game_scene.o.d -I . -I . -I ${env:PLAYDATE_SDK_PATH}/C_API -I src -I peanut_gb -I minigb_apu -I lcd src/game_scene.c -o build/src/game_scene.o",
+    "file": "src/game_scene.c"
+  },
+  {
+    "directory": "/${workspaceFolder}",
+    "command": "/usr/local/bin/arm-none-eabi-gcc -g3 -c -mthumb  -D__FPU_USED=1 -O2 -falign-functions=16 -fomit-frame-pointer -gdwarf-2 -Wall -Wno-unused -Wstrict-prototypes -Wno-unknown-pragmas -fverbose-asm -Wdouble-promotion  -fno-common -ffunction-sections -fdata-sections -Wa,-ahlms=build/array.lst -DTARGET_PLAYDATE=1 -DTARGET_EXTENSION=1  -MD -MP -MF build/dep/array.o.d -I . -I . -I ${env:PLAYDATE_SDK_PATH}/C_API -I src -I peanut_gb -I minigb_apu -I lcd src/array.c -o build/src/array.o",
+    "file": "src/array.c"
+  },
+  {
+    "directory": "/${workspaceFolder}",
+    "command": "/usr/local/bin/arm-none-eabi-gcc -g3 -c -mthumb  -D__FPU_USED=1 -O2 -falign-functions=16 -fomit-frame-pointer -gdwarf-2 -Wall -Wno-unused -Wstrict-prototypes -Wno-unknown-pragmas -fverbose-asm -Wdouble-promotion  -fno-common -ffunction-sections -fdata-sections -Wa,-ahlms=build/listview.lst -DTARGET_PLAYDATE=1 -DTARGET_EXTENSION=1  -MD -MP -MF build/dep/listview.o.d -I . -I . -I ${env:PLAYDATE_SDK_PATH}/C_API -I src -I peanut_gb -I minigb_apu -I lcd src/listview.c -o build/src/listview.o",
+    "file": "src/listview.c"
+  },
+  {
+    "directory": "/${workspaceFolder}",
+    "command": "/usr/local/bin/arm-none-eabi-gcc -g3 -c -mthumb  -D__FPU_USED=1 -O2 -falign-functions=16 -fomit-frame-pointer -gdwarf-2 -Wall -Wno-unused -Wstrict-prototypes -Wno-unknown-pragmas -fverbose-asm -Wdouble-promotion  -fno-common -ffunction-sections -fdata-sections -Wa,-ahlms=build/preferences.lst -DTARGET_PLAYDATE=1 -DTARGET_EXTENSION=1  -MD -MP -MF build/dep/preferences.o.d -I . -I . -I ${env:PLAYDATE_SDK_PATH}/C_API -I src -I peanut_gb -I minigb_apu -I lcd src/preferences.c -o build/src/preferences.o",
+    "file": "src/preferences.c"
+  },
+  {
+    "directory": "/${workspaceFolder}",
+    "command": "/usr/local/bin/arm-none-eabi-gcc -g3 -c -mthumb  -D__FPU_USED=1 -O2 -falign-functions=16 -fomit-frame-pointer -gdwarf-2 -Wall -Wno-unused -Wstrict-prototypes -Wno-unknown-pragmas -fverbose-asm -Wdouble-promotion  -fno-common -ffunction-sections -fdata-sections -Wa,-ahlms=build/setup.lst -DTARGET_PLAYDATE=1 -DTARGET_EXTENSION=1  -MD -MP -MF build/dep/setup.o.d -I . -I . -I ${env:PLAYDATE_SDK_PATH}/C_API -I src -I peanut_gb -I minigb_apu -I lcd ${env:PLAYDATE_SDK_PATH}/C_API/buildsupport/setup.c -o build/${env:PLAYDATE_SDK_PATH}/C_API/buildsupport/setup.o",
+    "file": "${env:PLAYDATE_SDK_PATH}/C_API/buildsupport/setup.c"
+  }
+]
