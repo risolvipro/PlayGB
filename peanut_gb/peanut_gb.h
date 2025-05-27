@@ -1008,6 +1008,7 @@ void __gb_write(struct gb_s *gb, const uint_fast16_t addr, const uint8_t val)
 	(gb->gb_error)(gb, GB_INVALID_WRITE, addr);
 }
 
+__attribute__((optimize("O3")))
 uint8_t __gb_execute_cb(struct gb_s *gb)
 {
 	uint8_t inst_cycles;
@@ -1497,6 +1498,7 @@ void __gb_draw_line(struct gb_s *gb)
 /**
  * Internal function used to step the CPU.
  */
+__attribute__((optimize("Ofast")))
 void __gb_step_cpu(struct gb_s *gb)
 {
 	static const uint8_t op_cycles[0x100] =

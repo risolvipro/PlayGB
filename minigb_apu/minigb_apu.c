@@ -588,6 +588,7 @@ void audio_init(void)
 /**
  * Playdate audio callback function.
  */
+__attribute__((optimize("O3")))
 int audio_callback(void *context, int16_t *left, int16_t *right, int len)
 {
     PGB_GameScene **gameScene_ptr = context;
