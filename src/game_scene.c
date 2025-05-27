@@ -349,6 +349,7 @@ static void gb_error(struct gb_s *gb, const enum gb_error_e gb_err, const uint16
     return;
 }
 
+__attribute__((optimize("Ofast")))
 static void PGB_GameScene_update(void *object)
 {
     PGB_GameScene *gameScene = object;
