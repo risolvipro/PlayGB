@@ -534,6 +534,7 @@ void gb_set_rtc(struct gb_s *gb, const struct tm * const time)
 /**
  * Internal function used to read bytes.
  */
+__attribute__((optimize("O3")))
 uint8_t __gb_read(struct gb_s *gb, const uint_fast16_t addr)
 {
 	switch(addr >> 12)
@@ -3707,6 +3708,7 @@ void __gb_step_cpu(struct gb_s *gb)
     }
 }
 
+__attribute__((optimize("Ofast")))
 void gb_run_frame(struct gb_s *gb)
 {
 	gb->gb_frame = 0;

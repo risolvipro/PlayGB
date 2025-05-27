@@ -117,6 +117,7 @@ static void chan_enable(const uint_fast8_t i, const bool enable)
 	//audio_mem[0xFF26 - AUDIO_ADDR_COMPENSATION] |= 0x80 | ((uint8_t)enable) << i;
 }
 
+__attribute__((optimize("Ofast")))
 static void update_env(struct chan *c)
 {
 	c->env.counter += c->env.inc;
