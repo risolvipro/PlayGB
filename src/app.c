@@ -45,6 +45,7 @@ void PGB_init(void)
     PGB_present(libraryScene->scene);
 }
 
+__attribute__((optimize("Ofast")))
 void PGB_update(float dt)
 {
     PGB_App->dt = dt;
