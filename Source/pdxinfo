@@ -3,5 +3,5 @@ author=Risolvi Productions
 description=A Game Boy emulator based on Peanut-GB
 bundleID=com.risolvipro.playgb
 version=0.8.2
-buildNumber=2
+buildNumber=10
 imagePath=launcher
