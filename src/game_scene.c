@@ -58,7 +58,7 @@ PGB_GameScene* PGB_GameScene_new(const char *rom_filename)
 
     scene->preferredRefreshRate = 30;
 
-    gameScene->rtc_timer = 0;
+    gameScene->rtc_time = playdate->system->getSecondsSinceEpoch(NULL);
     
     gameScene->rom_filename = string_copy(rom_filename);
     gameScene->save_filename = NULL;
@@ -69,7 +69,9 @@ PGB_GameScene* PGB_GameScene_new(const char *rom_filename)
     gameScene->model = (PGB_GameSceneModel){
         .state = PGB_GameSceneStateError,
         .error = PGB_GameSceneErrorUndefined,
-        .selectorIndex = 0,
+        .selectorToggleY = 0,
+        .selectorStartPressed = false,
+        .selectorSelectPressed = false,
         .empty = true
     };
     
@@ -111,6 +113,12 @@ PGB_GameScene* PGB_GameScene_new(const char *rom_filename)
             
             context->gb.gb_cart_ram = context->cart_ram;
             
+            gameScene->rtc_time = playdate->system->getSecondsSinceEpoch(NULL);
+            
+            time_t time = gameScene->rtc_time + 946684800;
+            struct tm *timeinfo = localtime(&time);
+            gb_set_rtc(&context->gb, timeinfo);
+            
             if(gameScene->audioEnabled)
             {
                 // init audio
@@ -125,7 +133,7 @@ PGB_GameScene* PGB_GameScene_new(const char *rom_filename)
             // init lcd
             gb_init_lcd(&context->gb);
             
-            context->gb.direct.frame_skip = 1;
+            context->gb.direct.frame_skip = preferences_frame_skip ? 1 : 0;
 
             // set game state to loaded
             gameScene->state = PGB_GameSceneStateLoaded;
@@ -163,8 +171,8 @@ static void PGB_GameScene_selector_init(PGB_GameScene *gameScene)
     int containerHeight = labelHeight + startSpacing + height + selectSpacing + labelHeight;
     int containerWidth = width;
     
-    containerWidth = PGB_MAX(containerWidth, startButtonWidth);
-    containerWidth = PGB_MAX(containerWidth, selectButtonWidth);
+    containerWidth = pgb_max(containerWidth, startButtonWidth);
+    containerWidth = pgb_max(containerWidth, selectButtonWidth);
     
     int containerX = playdate->display->getWidth() - 6 - containerWidth;
     int containerY = 8;
@@ -190,12 +198,12 @@ static void PGB_GameScene_selector_init(PGB_GameScene *gameScene)
     gameScene->selector.startButtonY = startButtonY;
     gameScene->selector.selectButtonX = selectButtonX;
     gameScene->selector.selectButtonY = selectButtonY;
-    gameScene->selector.numberOfFrames = 27;
     gameScene->selector.triggerAngle = 15;
     gameScene->selector.deadAngle = 20;
-    gameScene->selector.index = 0;
+    gameScene->selector.toggleY = 0;
     gameScene->selector.startPressed = false;
     gameScene->selector.selectPressed = false;
+    gameScene->selector.toggleSize = 20;
 }
 
 /**
@@ -383,26 +391,7 @@ static void PGB_GameScene_update(void *object)
         }
     }
     
-    int selectorIndex;
-    
-    if(gameScene->selector.startPressed && gameScene->selector.selectPressed)
-    {
-        selectorIndex = -1;
-    }
-    else {
-        selectorIndex = 1 + roundf(progress * (gameScene->selector.numberOfFrames - 2));
-        
-        if(progress == 0)
-        {
-            selectorIndex = 0;
-        }
-        else if(progress == 1)
-        {
-            selectorIndex = gameScene->selector.numberOfFrames - 1;
-        }
-    }
-    
-    gameScene->selector.index = selectorIndex;
+    gameScene->selector.toggleY = roundf((gameScene->selector.height - gameScene->selector.toggleSize) * progress);
     
     bool needsDisplay = false;
     
@@ -412,7 +401,7 @@ static void PGB_GameScene_update(void *object)
     }
     
     bool needsDisplaySelector = false;
-    if(needsDisplay || gameScene->model.selectorIndex != gameScene->selector.index)
+    if(needsDisplay || gameScene->model.selectorToggleY != gameScene->selector.toggleY || gameScene->model.selectorStartPressed != gameScene->selector.startPressed || gameScene->model.selectorSelectPressed != gameScene->selector.selectPressed)
     {
         needsDisplaySelector = true;
     }
@@ -420,7 +409,9 @@ static void PGB_GameScene_update(void *object)
     gameScene->model.empty = false;
     gameScene->model.state = gameScene->state;
     gameScene->model.error = gameScene->error;
-    gameScene->model.selectorIndex = gameScene->selector.index;
+    gameScene->model.selectorToggleY = gameScene->selector.toggleY;
+    gameScene->model.selectorStartPressed = gameScene->selector.startPressed;
+    gameScene->model.selectorSelectPressed = gameScene->selector.selectPressed;
     gameScene->needsDisplay = false;
     
     if(gameScene->state == PGB_GameSceneStateLoaded)
@@ -563,13 +554,18 @@ static void PGB_GameScene_update(void *object)
             }
         }
         
-        gameScene->rtc_timer += PGB_App->dt;
-        
-        if(gameScene->rtc_timer >= 1)
-        {
-            gameScene->rtc_timer = gameScene->rtc_timer - 1;
-            gb_tick_rtc(&context->gb);
+        const unsigned int rtc_delta_max = 60 * 60;
+        unsigned int rtc_delta = playdate->system->getSecondsSinceEpoch(NULL) - gameScene->rtc_time;
+        if(rtc_delta > rtc_delta_max){
+            rtc_delta = rtc_delta_max;
         }
+        unsigned int rtc_tick = 0;
+        while(rtc_tick < rtc_delta)
+        {
+            gb_tick_rtc(&context->gb);
+            rtc_tick++;
+        }
+        gameScene->rtc_time += rtc_delta;
 
         if(needsDisplay)
         {
@@ -584,18 +580,24 @@ static void PGB_GameScene_update(void *object)
         
         if(needsDisplaySelector)
         {
-            LCDBitmap *bitmap;
+            PGB_CrankSelector *selector = &gameScene->selector;
             
-            if(selectorIndex < 0)
+            playdate->graphics->drawBitmap(PGB_App->selectorBackground, selector->x, selector->y, kBitmapUnflipped);
+            
+            if(selector->startPressed && selector->selectPressed)
             {
-                bitmap = PGB_App->startSelectBitmap;
+                playdate->graphics->drawBitmap(PGB_App->selectorFilledButton, selector->x, selector->y, kBitmapUnflipped);
+                playdate->graphics->drawBitmap(PGB_App->selectorFilledButton, selector->x, selector->y + gameScene->selector.height - selector->toggleSize, kBitmapUnflipped);
             }
             else
             {
-                bitmap = playdate->graphics->getTableBitmap(PGB_App->selectorBitmapTable, selectorIndex);
+                LCDBitmap *toggleImage = PGB_App->selectorButton;
+                if(selector->startPressed || selector->selectPressed)
+                {
+                    toggleImage = PGB_App->selectorFilledButton;
+                }
+                playdate->graphics->drawBitmap(toggleImage, selector->x, selector->y + selector->toggleY, kBitmapUnflipped);
             }
-            
-            playdate->graphics->drawBitmap(bitmap, gameScene->selector.x, gameScene->selector.y, kBitmapUnflipped);
         }
         
         #if PGB_DEBUG && PGB_DEBUG_UPDATED_ROWS
