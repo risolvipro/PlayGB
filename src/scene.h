@@ -9,20 +9,22 @@
 #define scene_h
 
 #include <stdio.h>
+
 #include "utility.h"
 
-typedef struct PGB_Scene {
+typedef struct PGB_Scene
+{
     void *managedObject;
-    
+
     float preferredRefreshRate;
     float refreshRateCompensation;
-    
-    void(*update)(void *object);
-    void(*menu)(void *object);
-    void(*free)(void *object);
+
+    void (*update)(void *object);
+    void (*menu)(void *object);
+    void (*free)(void *object);
 } PGB_Scene;
 
-PGB_Scene* PGB_Scene_new(void);
+PGB_Scene *PGB_Scene_new(void);
 
 void PGB_Scene_refreshMenu(PGB_Scene *scene);
 

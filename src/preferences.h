@@ -9,6 +9,7 @@
 #define preferences_h
 
 #include <stdio.h>
+
 #include "utility.h"
 
 extern bool preferences_sound_enabled;
