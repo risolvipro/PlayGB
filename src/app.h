@@ -8,14 +8,15 @@
 #ifndef app_h
 #define app_h
 
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
 
 #include "pd_api.h"
 #include "scene.h"
 #include "utility.h"
 
-typedef struct PGB_Application {
+typedef struct PGB_Application
+{
     float dt;
     float crankChange;
     PGB_Scene *scene;

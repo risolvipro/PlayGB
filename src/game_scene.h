@@ -8,8 +8,9 @@
 #ifndef game_scene_h
 #define game_scene_h
 
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
+
 #include "scene.h"
 
 typedef struct PGB_GameSceneContext PGB_GameSceneContext;
@@ -17,19 +18,22 @@ typedef struct PGB_GameScene PGB_GameScene;
 
 extern PGB_GameScene *audioGameScene;
 
-typedef enum {
+typedef enum
+{
     PGB_GameSceneStateLoaded,
     PGB_GameSceneStateError
 } PGB_GameSceneState;
 
-typedef enum {
+typedef enum
+{
     PGB_GameSceneErrorUndefined,
     PGB_GameSceneErrorLoadingRom,
     PGB_GameSceneErrorWrongLocation,
     PGB_GameSceneErrorFatal
 } PGB_GameSceneError;
 
-typedef struct {
+typedef struct
+{
     PGB_GameSceneState state;
     PGB_GameSceneError error;
     int selectorToggleY;
@@ -38,7 +42,8 @@ typedef struct {
     bool empty;
 } PGB_GameSceneModel;
 
-typedef struct {
+typedef struct
+{
     int width;
     int height;
     int containerWidth;
@@ -59,11 +64,12 @@ typedef struct {
     bool selectPressed;
 } PGB_CrankSelector;
 
-typedef struct PGB_GameScene {
+typedef struct PGB_GameScene
+{
     PGB_Scene *scene;
     char *save_filename;
     char *rom_filename;
-    
+
     bool needsDisplay;
     bool audioEnabled;
     bool audioLocked;
@@ -73,15 +79,15 @@ typedef struct PGB_GameScene {
     PGB_GameSceneContext *context;
     PGB_GameSceneModel model;
     PGB_GameSceneError error;
-    
+
     PGB_CrankSelector selector;
-    
+
 #if PGB_DEBUG && PGB_DEBUG_UPDATED_ROWS
     PDRect debug_highlightFrame;
     bool debug_updatedRows[LCD_ROWS];
 #endif
 } PGB_GameScene;
 
-PGB_GameScene* PGB_GameScene_new(const char *rom_filename);
+PGB_GameScene *PGB_GameScene_new(const char *rom_filename);
 
 #endif /* game_scene_h */

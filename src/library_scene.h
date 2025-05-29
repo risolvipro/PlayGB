@@ -9,26 +9,31 @@
 #define library_scene_h
 
 #include <stdio.h>
-#include "scene.h"
+
 #include "array.h"
 #include "listview.h"
+#include "scene.h"
 
-typedef enum {
+typedef enum
+{
     PGB_LibrarySceneTabList,
     PGB_LibrarySceneTabEmpty
 } PGB_LibrarySceneTab;
 
-typedef struct {
+typedef struct
+{
     bool empty;
     PGB_LibrarySceneTab tab;
 } PGB_LibrarySceneModel;
 
-typedef struct {
+typedef struct
+{
     char *filename;
     char *fullpath;
 } PGB_Game;
 
-typedef struct PGB_LibraryScene {
+typedef struct PGB_LibraryScene
+{
     PGB_Scene *scene;
     PGB_Array *games;
     PGB_LibrarySceneModel model;
@@ -37,9 +42,9 @@ typedef struct PGB_LibraryScene {
     PGB_LibrarySceneTab tab;
 } PGB_LibraryScene;
 
-PGB_LibraryScene* PGB_LibraryScene_new(void);
+PGB_LibraryScene *PGB_LibraryScene_new(void);
 
-PGB_Game* PGB_Game_new(const char *filename);
+PGB_Game *PGB_Game_new(const char *filename);
 void PGB_Game_free(PGB_Game *game);
 
 #endif /* library_scene_h */

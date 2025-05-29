@@ -1,0 +1,72 @@
+# .clang-format for Allman Style
+
+# Language: C (clang-format uses Cpp engine for C as well)
+Language: Cpp
+
+# Based on Google Style, then modified for Allman
+# Many Google Style options are C++ centric, but it provides a good base.
+# We will override/remove C++ specific parts.
+BasedOnStyle: Google
+
+# --- Allman Style Specifics ---
+
+# Braces: Always on a new line (Allman style)
+BreakBeforeBraces: Allman
+# IndentBraces: false
+
+# Indentation
+IndentWidth: 4
+ContinuationIndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+# Pointer Alignment: Right align pointer operators
+PointerAlignment: Right
+
+# Spaces
+SpaceBeforeParens: ControlStatements
+
+# Other preferences that often go with Allman or are generally good for C:
+AllowShortFunctionsOnASingleLine: None
+AllowShortBlocksOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+
+# Column Limit (optional, but common in C)
+ColumnLimit: 80
+
+# Sort Includes
+SortIncludes: true
+IncludeBlocks: Regroup
+
+# --- End of Allman Style Specifics ---
+
+# --- Overriding/Removing C++ specific or less relevant Google defaults ---
+
+AllowShortCaseLabelsOnASingleLine: false
+BreakBeforeBinaryOperators: None
+BreakBeforeTernaryOperators: true
+BreakStringLiterals: true # Generally fine
+DerivePointerAlignment: false
+DisableFormat: false
+IncludeCategories:
+  - Regex:           '^<.*\.h>'
+    Priority:        1 # C system headers
+  - Regex:           '.*'
+    Priority:        2
+IndentCaseLabels: false
+IndentPPDirectives: None
+KeepEmptyLinesAtTheStartOfBlocks: true
+MaxEmptyLinesToKeep: 1
+ReflowComments: true
+SpaceAfterCStyleCast: false
+SpaceAroundPointerQualifiers: Default
+SpaceBeforeAssignmentOperators: true
+SpaceInEmptyParentheses: false
+SpacesBeforeTrailingComments: 2
+SpacesInAngles: false
+SpacesInContainerLiterals: false
+SpacesInCStyleCastParentheses: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+

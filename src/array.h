@@ -8,16 +8,18 @@
 #ifndef array_h
 #define array_h
 
-#include <stdio.h>
 #include <stdbool.h>
+#include <stdio.h>
+
 #include "utility.h"
 
-typedef struct {
+typedef struct
+{
     unsigned int length;
-    void** items;
+    void **items;
 } PGB_Array;
 
-PGB_Array* array_new(void);
+PGB_Array *array_new(void);
 
 void array_push(PGB_Array *array, void *item);
 void array_clear(PGB_Array *array);
