@@ -1,3 +1,10 @@
+>## 📌 Important
+> We recommend [CrankBoy](https://github.com/CrankBoyHQ/crankboy-app), an enhanced version of PlayGB with excellent performance, advanced features, and improved ROMs compatibility.
+> 
+> [Get CrankBoy](https://github.com/CrankBoyHQ/crankboy-app)
+>
+> You can still use PlayGB as an alternative, for example, to test a specific ROM.
+
 <p>
 <img src="assets/playgb-logo-2x.png?raw=true" width="200">
 </p>
