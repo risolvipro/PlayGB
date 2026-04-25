@@ -35,3 +35,7 @@ A Game Boy emulator for Playdate. PlayGB is based on [Peanut-GB](https://github.
 ## Implementation
 
 PlayGB uses a slightly modified version of Peanut-GB which supports partial screen update.
+
+### AI Disclosure
+
+AI was not used to develop this app.
