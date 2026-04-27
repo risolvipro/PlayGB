@@ -40,6 +40,7 @@ PGB_LibraryScene* PGB_LibraryScene_new(void)
     libraryScene->games = array_new();
     libraryScene->listView = PGB_ListView_new();
     libraryScene->tab = PGB_LibrarySceneTabList;
+    libraryScene->lastSelectedItem = -1;
     
     PGB_LibraryScene_reloadList(libraryScene);
     
@@ -147,11 +148,127 @@ static void PGB_LibraryScene_update(void *object)
     
     if(libraryScene->tab == PGB_LibrarySceneTabList)
     {
+        int screenWidth = playdate->display->getWidth();
+        int screenHeight = playdate->display->getHeight();
+        
+        int rightPanelWidth = 241;
+        int leftPanelWidth = screenWidth - rightPanelWidth;
+        
         libraryScene->listView->needsDisplay = needsDisplay;
-        libraryScene->listView->frame = PDRectMake(0, 0, playdate->display->getWidth(), playdate->display->getHeight());
+        libraryScene->listView->frame = PDRectMake(0, 0, leftPanelWidth, screenHeight);
         
         PGB_ListView_update(libraryScene->listView);
         PGB_ListView_draw(libraryScene->listView);
+        
+        int selectedIndex = libraryScene->listView->selectedItem;
+        
+        bool selectionChanged = (selectedIndex != libraryScene->lastSelectedItem);
+        
+        if (needsDisplay || libraryScene->listView->needsDisplay || selectionChanged) 
+        {
+            libraryScene->lastSelectedItem = selectedIndex;
+            
+            playdate->graphics->drawLine(leftPanelWidth, 0, leftPanelWidth, screenHeight, 1, kColorBlack);
+            
+            playdate->system->logToConsole("Selected item changed: %d", selectedIndex);
+            if (selectedIndex >= 0 && selectedIndex < libraryScene->games->length) {
+                PGB_Game *selectedGame = libraryScene->games->items[selectedIndex];
+                
+                playdate->system->logToConsole("Trying to load cover: %s", selectedGame->coverPath);
+                
+                playdate->graphics->fillRect(leftPanelWidth+1, 0, rightPanelWidth-1, screenHeight, kColorWhite);
+                
+                FileStat fileStat;
+                int statResult = playdate->file->stat(selectedGame->coverPath, &fileStat);
+                
+                if (statResult == 0) {
+                    playdate->system->logToConsole("Cover file exists! Size: %d bytes", fileStat.size);
+                    
+                    playdate->system->logToConsole("Loading image: %s", selectedGame->coverPath);
+                    LCDBitmap *coverImage = NULL;
+                    
+                    coverImage = playdate->graphics->loadBitmap(selectedGame->coverPath, NULL);
+                    
+                    if (coverImage != NULL) {
+                        playdate->system->logToConsole("Successfully loaded cover image!");
+                        
+                        int imageWidth, imageHeight;
+                        playdate->graphics->getBitmapData(coverImage, &imageWidth, &imageHeight, NULL, NULL, NULL);
+                        
+                        playdate->system->logToConsole("Image dimensions: %d x %d", imageWidth, imageHeight);
+                        
+                        if (imageWidth > 0 && imageHeight > 0) {
+                            int maxWidth = 240;
+                            int maxHeight = 240;
+                            
+                            if (imageWidth > maxWidth || imageHeight > maxHeight) {
+                                LCDBitmap *scaledBitmap = NULL;
+                                
+                                float scaleX = (float)maxWidth / imageWidth;
+                                float scaleY = (float)maxHeight / imageHeight;
+                                float scale = scaleX < scaleY ? scaleX : scaleY;
+                                
+                                int scaledWidth = imageWidth * scale;
+                                int scaledHeight = imageHeight * scale;
+                                
+                                if (scaledWidth > 0 && scaledHeight > 0) {
+                                    scaledBitmap = playdate->graphics->newBitmap(scaledWidth, scaledHeight, kColorClear);
+                                    playdate->graphics->pushContext(scaledBitmap);
+                                    playdate->graphics->drawScaledBitmap(coverImage, 0, 0, scale, scale);
+                                    playdate->graphics->popContext();
+                                    
+                                    int coverX = leftPanelWidth + 1;
+                                    int coverY = (screenHeight - scaledHeight) / 2;
+                                    
+                                    playdate->system->logToConsole("Drawing scaled bitmap at %d,%d", coverX, coverY);
+                                    playdate->graphics->drawBitmap(scaledBitmap, coverX, coverY, kBitmapUnflipped);
+                                    playdate->graphics->freeBitmap(scaledBitmap);
+                                }
+                            } else {
+                                int coverX = leftPanelWidth + 1;
+                                int coverY = (screenHeight - imageHeight) / 2;
+                                
+                                playdate->system->logToConsole("Drawing bitmap at %d,%d", coverX, coverY);
+                                playdate->graphics->drawBitmap(coverImage, coverX, coverY, kBitmapUnflipped);
+                            }
+                            
+                        } else {
+                            const char *message = "Invalid image";
+                            playdate->graphics->setFont(PGB_App->bodyFont);
+                            int textWidth = playdate->graphics->getTextWidth(PGB_App->bodyFont, message, strlen(message), kUTF8Encoding, 0);
+                            int textX = leftPanelWidth + (rightPanelWidth - textWidth) / 2;
+                            int textY = screenHeight / 2;
+                            
+                            playdate->graphics->drawText(message, strlen(message), kUTF8Encoding, textX, textY);
+                        }
+                        
+                        playdate->graphics->freeBitmap(coverImage);
+                        
+                    } else {
+                        const char *message = "Error loading image";
+                        playdate->graphics->setFont(PGB_App->bodyFont);
+                        int textWidth = playdate->graphics->getTextWidth(PGB_App->bodyFont, message, strlen(message), kUTF8Encoding, 0);
+                        int textX = leftPanelWidth + (rightPanelWidth - textWidth) / 2;
+                        int textY = screenHeight / 2;
+                        
+                        playdate->graphics->drawText(message, strlen(message), kUTF8Encoding, textX, textY);
+                    }
+                    
+                } else {
+                    playdate->system->logToConsole("Cover file doesn't exist! Error: %s", playdate->file->geterr());
+                    
+                    const char *message = "Missing cover";
+                    playdate->graphics->setFont(PGB_App->bodyFont);
+                    int textWidth = playdate->graphics->getTextWidth(PGB_App->bodyFont, message, strlen(message), kUTF8Encoding, 0);
+                    int textX = leftPanelWidth + (rightPanelWidth - textWidth) / 2;
+                    int textY = screenHeight / 2;
+                    
+                    playdate->graphics->drawText(message, strlen(message), kUTF8Encoding, textX, textY);
+                }
+                
+                playdate->graphics->drawLine(leftPanelWidth, 0, leftPanelWidth, screenHeight, 1, kColorBlack);
+            }
+        }
     }
     else if(libraryScene->tab == PGB_LibrarySceneTabEmpty)
     {
@@ -249,6 +366,47 @@ PGB_Game* PGB_Game_new(const char *filename)
     playdate->system->formatString(&fullpath, "%s/%s", PGB_gamesPath, filename);
     game->fullpath = fullpath;
     
+    char *basename = string_copy(filename);
+    char *ext = strrchr(basename, '.');
+    if (ext != NULL) {
+        *ext = '\0';
+    }
+    
+    char *cleanName = string_copy(basename);
+    char *p = cleanName;
+    while (*p) {
+        if (*p == ' ' || *p == '(' || *p == ')' || *p == '[' || *p == ']' || 
+            *p == '{' || *p == '}' || *p == '!' || *p == '?' || *p == ':' || 
+            *p == ';' || *p == ',' || *p == '&' || *p == '\'') {
+            *p = '_';
+        }
+        p++;
+    }
+    
+    char *coverPath = NULL;
+    FileStat fileStat;
+    bool found = false;
+    
+    playdate->system->formatString(&coverPath, "%s/%s.pdi", PGB_gamesPath, cleanName);
+    if (playdate->file->stat(coverPath, &fileStat) == 0) {
+        found = true;
+        playdate->system->logToConsole("Found PDI cover with clean name: %s", coverPath);
+    }
+    
+    if (!found) {
+        if (coverPath != NULL) {
+            pgb_free(coverPath);
+        }
+        
+        playdate->system->formatString(&coverPath, "%s/%s.pdi", PGB_gamesPath, basename);
+        playdate->system->logToConsole("Using PDI with original name: %s", coverPath);
+    }
+    
+    pgb_free(cleanName);
+    pgb_free(basename);
+    
+    game->coverPath = coverPath;
+    
     return game;
 }
 
@@ -256,6 +414,7 @@ void PGB_Game_free(PGB_Game *game)
 {
     pgb_free(game->filename);
     pgb_free(game->fullpath);
+    pgb_free(game->coverPath);
     
     pgb_free(game);
 }

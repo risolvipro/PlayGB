@@ -64,6 +64,9 @@ PGB_ListView* PGB_ListView_new(void)
         .scrollIndicatorVisible = false
     };
     
+    listView->textScrollTime = 0;
+    listView->textScrollPause = 0;
+    
     return listView;
 }
 
@@ -108,8 +111,8 @@ void PGB_ListView_reload(PGB_ListView *listView){
     listView->needsDisplay = true;
 }
 
-void PGB_ListView_update(PGB_ListView *listView){
-    
+void PGB_ListView_update(PGB_ListView *listView)
+{
     PDButtons pushed;
     PDButtons pressed;
     playdate->system->getButtonState(&pressed, &pushed, NULL);
@@ -277,6 +280,53 @@ void PGB_ListView_update(PGB_ListView *listView){
         indicatorOffset = PGB_ListView_scrollInset + (listView->contentOffset / (listView->contentSize - listView->frame.height)) * scrollHeight;
     }
     listView->scroll.indicatorOffset = indicatorOffset;
+    
+    if (listView->selectedItem >= 0 && listView->selectedItem < listView->items->length) {
+        PGB_ListItem *item = listView->items->items[listView->selectedItem];
+        if (item->type == PGB_ListViewItemTypeButton) {
+            PGB_ListItemButton *button = item->object;
+            
+            playdate->graphics->setFont(PGB_App->subheadFont);
+            int textWidth = playdate->graphics->getTextWidth(PGB_App->subheadFont, button->title, strlen(button->title), kUTF8Encoding, 0);
+            int availableWidth = listView->frame.width - (PGB_ListView_inset * 2);
+            
+            button->needsTextScroll = (textWidth > availableWidth);
+            
+            if (button->needsTextScroll) {
+                listView->textScrollTime += PGB_App->dt;
+                
+                float scrollPeriod = 3.0f;
+                float pauseDuration = 1.0f;
+                float maxOffset = textWidth - availableWidth;
+                
+                if (listView->textScrollPause > 0) {
+                    listView->textScrollPause -= PGB_App->dt;
+                } else {
+                    float normalizedTime = fmodf(listView->textScrollTime, scrollPeriod) / scrollPeriod;
+                    
+                    if (normalizedTime < 0.5f) {
+                        float t = normalizedTime * 2.0f;
+                        button->textScrollOffset = pgb_easeInOutQuad(t) * maxOffset;
+                        
+                        if (normalizedTime > 0.49f) {
+                            listView->textScrollPause = pauseDuration;
+                        }
+                    } else {
+                        float t = (normalizedTime - 0.5f) * 2.0f;
+                        button->textScrollOffset = (1.0f - pgb_easeInOutQuad(t)) * maxOffset;
+                        
+                        if (normalizedTime > 0.99f) {
+                            listView->textScrollPause = pauseDuration;
+                        }
+                    }
+                }
+                
+                listView->needsDisplay = true;
+            } else {
+                button->textScrollOffset = 0;
+            }
+        }
+    }
 }
 
 void PGB_ListView_draw(PGB_ListView *listView)
@@ -301,6 +351,10 @@ void PGB_ListView_draw(PGB_ListView *listView)
     {
         int listX = listView->frame.x;
         int listY = listView->frame.y;
+        
+        int screenWidth = playdate->display->getWidth();
+        int rightPanelWidth = 241;
+        int leftPanelWidth = screenWidth - rightPanelWidth;
 
         playdate->graphics->fillRect(listX, listY, listView->frame.width, listView->frame.height, kColorWhite);
                 
@@ -334,7 +388,19 @@ void PGB_ListView_draw(PGB_ListView *listView)
                 int textY = rowY + (float)(item->height - playdate->graphics->getFontHeight(PGB_App->subheadFont)) / 2;
                 
                 playdate->graphics->setFont(PGB_App->subheadFont);
-                playdate->graphics->drawText(itemButton->title, strlen(itemButton->title), kUTF8Encoding, textX, textY);
+                
+                int maxTextWidth = leftPanelWidth - PGB_ListView_inset - 1;
+                
+                playdate->graphics->setClipRect(textX, rowY, maxTextWidth, item->height);
+                
+                if (selected && itemButton->needsTextScroll) {
+                    int scrolledX = textX - (int)itemButton->textScrollOffset;
+                    playdate->graphics->drawText(itemButton->title, strlen(itemButton->title), kUTF8Encoding, scrolledX, textY);
+                } else {
+                    playdate->graphics->drawText(itemButton->title, strlen(itemButton->title), kUTF8Encoding, textX, textY);
+                }
+                
+                playdate->graphics->clearClipRect();
                 
                 playdate->graphics->setDrawMode(kDrawModeCopy);
             }
@@ -380,6 +446,17 @@ static void PGB_ListView_selectItem(PGB_ListView *listView, unsigned int index, 
         listView->contentOffset = centeredOffset;
     }
     
+    listView->textScrollTime = 0;
+    listView->textScrollPause = 0;
+    
+    if (listView->selectedItem >= 0 && listView->selectedItem < listView->items->length) {
+        PGB_ListItem *oldItem = listView->items->items[listView->selectedItem];
+        if (oldItem->type == PGB_ListViewItemTypeButton) {
+            PGB_ListItemButton *button = oldItem->object;
+            button->textScrollOffset = 0;
+        }
+    }
+    
     listView->selectedItem = index;
 }
 
@@ -410,6 +487,9 @@ PGB_ListItemButton* PGB_ListItemButton_new(char *title)
     item->height = PGB_ListView_rowHeight;
     
     buttonItem->title = string_copy(title);
+    buttonItem->coverImage = NULL;
+    buttonItem->textScrollOffset = 0.0f;
+    buttonItem->needsTextScroll = false;
     
     return buttonItem;
 }
@@ -424,6 +504,11 @@ void PGB_ListItemButton_free(PGB_ListItemButton *itemButton)
     PGB_ListItem_super_free(itemButton->item);
     
     pgb_free(itemButton->title);
+    
+    if(itemButton->coverImage != NULL) {
+        playdate->graphics->freeBitmap(itemButton->coverImage);
+    }
+    
     pgb_free(itemButton);
 }
 
